@@ -322,8 +322,13 @@ llvm::Function *MainLifter::WrapImpl::DeclareDebugFunction() {
                               {runtime_manager_ptr_type, llvm::Type::getInt64Ty(context)}, false),
       llvm::Function::ExternalLinkage, "temp_patch_f_flags", *module);
   /* void debug_insn() */
-  return llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false),
-                                llvm::Function::ExternalLinkage, debug_insn_name, *module);
+  llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(context), {}, false),
+                         llvm::Function::ExternalLinkage, debug_insn_name, *module);
+  // void debug_string()
+  llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(context),
+                                                 {llvm::Type::getInt8PtrTy(context)}, false),
+                         llvm::Function::ExternalLinkage, debug_string_name, *module);
+  return nullptr;
 }
 
 /* Set lifted function symbol name table */

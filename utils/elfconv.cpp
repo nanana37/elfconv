@@ -54,9 +54,11 @@ extern "C" void debug_state_machine() {
   std::cout << std::hex << "tpidr_el0: 0x" << sr.tpidr_el0.qword << ", tpidrro_el0: 0x"
             << sr.tpidrro_el0.qword << ", ctr_el0: 0x" << sr.ctr_el0.qword << ", dczid_el0: 0x"
             << sr.dczid_el0.qword << ", midr_el1: 0x" << sr.midr_el1.qword << std::dec
-            << ", n: " << sr.n << ", z: " << sr.z << ", c: " << sr.c << ", v: " << sr.v
-            << ", ixc: " << sr.ixc << ", ofc: " << sr.ofc << ", ufc: " << sr.ufc
-            << ", idc: " << sr.idc << ", ioc: " << sr.ioc << std::endl;
+            << ", n: " << (uint64_t) sr.n << ", z: " << (uint64_t) sr.z
+            << ", c: " << (uint64_t) sr.c << ", v: " << (uint64_t) sr.v << ", ixc: " << sr.ixc
+            << ", ofc: " << sr.ofc << ", ufc: " << sr.ufc << ", idc: " << sr.idc
+            << ", ioc: " << sr.ioc << std::endl;
+  // abort();
 }
 
 extern "C" void debug_state_machine_vectors() {
@@ -81,9 +83,7 @@ extern "C" void debug_llvmir_f64value(double val) {
 
 extern "C" void debug_insn() {
   auto gpr = g_state.gpr;
-  std::cout << "[DEBUG INSN]" << std::endl;
-  std::cout << std::hex << "PC: 0x" << gpr.pc.qword << " x0: 0x" << gpr.x0.qword << " x1: 0x"
-            << gpr.x1.qword << " x2: 0x" << gpr.x2.qword << " x3: 0x" << gpr.x3.qword << std::endl;
+  std::cout << std::hex << " x0: 0x" << gpr.x1.qword << " x21: 0x" << gpr.x21.qword << std::endl;
 }
 
 #if defined(LIFT_DEBUG) && defined(__linux__)
