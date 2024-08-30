@@ -191,6 +191,7 @@ LiftStatus InstructionLifter::LiftIntoBlock(Instruction &arch_inst, llvm::BasicB
   auto debug_fun = module->getFunction("debug_llvmir_u64value");
   ir.CreateCall(debug_fun, {llvm::ConstantInt::get(llvm::Type::getInt64Ty(debug_fun->getContext()),
                                                    arch_inst.pc)});
+  auto debug_insn_fn = module->getFunction("debug_insn");
   ir.CreateCall(debug_insn_fn, {});
 
   // End an atomic block.
