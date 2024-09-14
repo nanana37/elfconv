@@ -83,7 +83,8 @@ extern "C" void debug_llvmir_f64value(double val) {
 
 extern "C" void debug_insn() {
   auto gpr = g_state.gpr;
-  std::cout << std::hex << " x0: 0x" << gpr.x1.qword << " x21: 0x" << gpr.x21.qword << std::endl;
+  std::cout << "PC: 0x" << std::hex << g_state.gpr.pc.qword << " x0: 0x" << gpr.x1.qword
+            << " x21: 0x" << gpr.x21.qword << std::endl;
 }
 
 #if defined(LIFT_DEBUG) && defined(__linux__)

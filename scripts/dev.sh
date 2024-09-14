@@ -3,6 +3,8 @@
 LLVM_VERSION=16
 ROOT_DIR=${HOME}/workspace/compiler/elfconv
 
+set -e
+
 setting() {
 
   if [ -n "$NEW_ROOT" ]; then
