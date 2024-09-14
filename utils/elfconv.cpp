@@ -83,8 +83,20 @@ extern "C" void debug_llvmir_f64value(double val) {
 
 extern "C" void debug_insn() {
   auto gpr = g_state.gpr;
-  std::cout << "PC: 0x" << std::hex << g_state.gpr.pc.qword << " x0: 0x" << gpr.x1.qword
-            << " x21: 0x" << gpr.x21.qword << std::endl;
+  std::cout << "PC: 0x" << std::hex << g_state.gpr.pc.qword << " x0: 0x" << gpr.x0.qword
+            << " x1: 0x" << gpr.x1.qword << " x2: 0x" << gpr.x2.qword << " x3: 0x" << gpr.x3.qword
+            << " x4: 0x" << gpr.x4.qword << " x5: 0x" << gpr.x5.qword << " x6: 0x" << gpr.x6.qword
+            << " x7: 0x" << gpr.x7.qword << " x8: 0x" << gpr.x8.qword << " x9: 0x" << gpr.x9.qword
+            << " x10: 0x" << gpr.x10.qword << " x11: 0x" << gpr.x11.qword << " x12: 0x"
+            << gpr.x12.qword << " x13: 0x" << gpr.x13.qword << " x14: 0x" << gpr.x14.qword
+            << " x15: 0x" << gpr.x15.qword << " x16: 0x" << gpr.x16.qword << " x17: 0x"
+            << gpr.x17.qword << " x18: 0x" << gpr.x18.qword << " x19: 0x" << gpr.x19.qword
+            << " x20: 0x" << gpr.x20.qword << " x21: 0x"
+            << " x21: 0x" << gpr.x21.qword << " x22: 0x" << gpr.x22.qword << " x23: 0x"
+            << gpr.x23.qword << " x24: 0x" << gpr.x24.qword << " x25: 0x" << gpr.x25.qword
+            << " x26: 0x" << gpr.x26.qword << " x27: 0x" << gpr.x27.qword << " x28: 0x"
+            << gpr.x28.qword << " x29: 0x" << gpr.x29.qword << " x30: 0x" << gpr.x30.qword
+            << " SP: 0x" << gpr.sp.qword << std::endl;
 }
 
 #if defined(LIFT_DEBUG) && defined(__linux__)
