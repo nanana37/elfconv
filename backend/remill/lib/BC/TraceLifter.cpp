@@ -757,6 +757,7 @@ bool TraceLifter::Impl::Lift(uint64_t addr, const char *fn_name,
 
     callback(trace_addr, func);
     manager.SetLiftedTraceDefinition(trace_addr, func);
+#if defined(DEBUG_ALL_REGS)
     auto &entry_bb_start_inst = *func->getEntryBlock().begin();
     auto debug_string_fn = module->getFunction("debug_string");
     auto fun_name_val = llvm::ConstantDataArray::getString(context, func->getName().str(), true);
@@ -766,6 +767,7 @@ bool TraceLifter::Impl::Lift(uint64_t addr, const char *fn_name,
     llvm::CallInst::Create(debug_string_fn, {fun_name_gvar}, "", &entry_bb_start_inst);
     auto debug_state_machine_fun = module->getFunction("debug_state_machine");
     llvm::CallInst::Create(debug_state_machine_fun, {}, "", &entry_bb_start_inst);
+#endif
   }
 
   return true;

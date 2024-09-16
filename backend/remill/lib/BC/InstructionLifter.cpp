@@ -188,8 +188,10 @@ LiftStatus InstructionLifter::LiftIntoBlock(Instruction &arch_inst, llvm::BasicB
   ir.CreateCall(isel_func, args);
 
   // Add the function that stdout the vma of this instruction.
+#if defined(DEBUG_ALL_REGS)
   auto debug_insn_fn = module->getFunction("debug_insn");
   ir.CreateCall(debug_insn_fn, {});
+#endif
 
   // End an atomic block.
   // (FIXME) In the current design, we don't consider the atomic instructions.
