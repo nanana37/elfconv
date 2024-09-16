@@ -127,16 +127,16 @@ static REAL linpack(long nreps, int arsize)
   tdgesl = 0;
   tdgefa = 0;
   totalt = second();
-  printf("totalt: %5.5f\n", totalt);
-  // for (i = 0; i < nreps; i++) {
-  //   matgen(a, lda, n, b, &norma);
-  //   t1 = second();
-  //   dgefa(a, lda, n, ipvt, &info, 1);
-  //   tdgefa += second() - t1;
-  //   t1 = second();
-  //   dgesl(a, lda, n, ipvt, b, 0, 1);
-  //   tdgesl += second() - t1;
-  // }
+  printf("totalt: %5.8f\n", totalt);
+  for (i = 0; i < nreps; i++) {
+    matgen(a, lda, n, b, &norma);
+    // t1 = second();
+    // dgefa(a, lda, n, ipvt, &info, 1);
+    // tdgefa += second() - t1;
+    // t1 = second();
+    // dgesl(a, lda, n, ipvt, b, 0, 1);
+    // tdgesl += second() - t1;
+  }
   // for (i = 0; i < nreps; i++) {
   //   matgen(a, lda, n, b, &norma);
   //   t1 = second();
@@ -146,20 +146,21 @@ static REAL linpack(long nreps, int arsize)
   //   dgesl(a, lda, n, ipvt, b, 0, 0);
   //   tdgesl += second() - t1;
   // }
-  totalt = second() - totalt;
-  printf("totalt2: %5.5f\n", totalt);
+  // REAL totalt2 = second();
+  // printf("totalt2: %5.8f\n", totalt2);
+  // printf("diff: %5.8f\n", totalt2 - totalt);
   // if (totalt < 0.5 || tdgefa + tdgesl < 0.2)
   //   return (0.);
-  kflops = 2. * nreps * ops / (1000. * (tdgefa + tdgesl));
-  toverhead = totalt - tdgefa - tdgesl;
-  if (tdgefa < 0.)
-    tdgefa = 0.;
-  if (tdgesl < 0.)
-    tdgesl = 0.;
-  if (toverhead < 0.)
-    toverhead = 0.;
-  printf("%8ld %6.2f %6.2f%% %6.2f%% %6.2f%%  %9.3f\n", nreps, totalt, 100. * tdgefa / totalt,
-         100. * tdgesl / totalt, 100. * toverhead / totalt, kflops);
+  // kflops = 2. * nreps * ops / (1000. * (tdgefa + tdgesl));
+  // toverhead = totalt - tdgefa - tdgesl;
+  // if (tdgefa < 0.)
+  //   tdgefa = 0.;
+  // if (tdgesl < 0.)
+  //   tdgesl = 0.;
+  // if (toverhead < 0.)
+  //   toverhead = 0.;
+  // printf("%8ld %6.2f %6.2f%% %6.2f%% %6.2f%%  %9.3f\n", nreps, totalt, 100. * tdgefa / totalt,
+  //        100. * tdgesl / totalt, 100. * toverhead / totalt, kflops);
   return (totalt);
 }
 
