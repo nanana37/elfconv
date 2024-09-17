@@ -55,9 +55,10 @@ extern "C" void debug_state_machine() {
             << sr.tpidrro_el0.qword << ", ctr_el0: 0x" << sr.ctr_el0.qword << ", dczid_el0: 0x"
             << sr.dczid_el0.qword << ", midr_el1: 0x" << sr.midr_el1.qword << std::dec
             << ", n: " << (uint64_t) sr.n << ", z: " << (uint64_t) sr.z
-            << ", c: " << (uint64_t) sr.c << ", v: " << (uint64_t) sr.v << ", ixc: " << sr.ixc
-            << ", ofc: " << sr.ofc << ", ufc: " << sr.ufc << ", idc: " << sr.idc
-            << ", ioc: " << sr.ioc << std::endl;
+            << ", c: " << (uint64_t) sr.c << ", v: " << (uint64_t) sr.v
+            << ", ixc: " << (uint64_t) sr.ixc << ", ofc: " << (uint64_t) sr.ofc
+            << ", ufc: " << (uint64_t) sr.ufc << ", idc: " << (uint64_t) sr.idc
+            << ", ioc: " << (uint64_t) sr.ioc << std::endl;
   // abort();
 }
 
