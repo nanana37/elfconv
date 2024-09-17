@@ -188,7 +188,7 @@ LiftStatus InstructionLifter::LiftIntoBlock(Instruction &arch_inst, llvm::BasicB
   ir.CreateCall(isel_func, args);
 
   // Add the function that stdout the vma of this instruction.
-#if defined(DEBUG_ALL_REGS)
+#if defined(DEBUG_ALL_REGS) && defined(DEBUG_EVERY_INSN)
   auto debug_insn_fn = module->getFunction("debug_insn");
   ir.CreateCall(debug_insn_fn, {});
 #endif
