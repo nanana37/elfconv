@@ -3964,7 +3964,7 @@ bool TryDecodeCSEL_64_CONDSEL(const InstData &data, Instruction &inst) {
 
 // FCSEL  <Sd>, <Sn>, <Sm>, <cond>
 bool TryDecodeFCSEL_S_FLOATSEL(const InstData &data, Instruction &inst) {
-  return false;
+  return DecodeConditionalRegSelect(data, inst, kRegS, 3);
 }
 
 // FCSEL  <Dd>, <Dn>, <Dm>, <cond>
@@ -5384,8 +5384,8 @@ bool TryDecodeWHILELO_PREDICATE(const InstData &data, Instruction &inst) {
 
 }  // namespace aarch64
 
-auto Arch::GetAArch64(llvm::LLVMContext *context_, OSName os_name_,
-                      ArchName arch_name_) -> ArchPtr {
+auto Arch::GetAArch64(llvm::LLVMContext *context_, OSName os_name_, ArchName arch_name_)
+    -> ArchPtr {
   return std::make_unique<AArch64Arch>(context_, os_name_, arch_name_);
 }
 

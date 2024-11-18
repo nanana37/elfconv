@@ -35,6 +35,7 @@ typedef Rn<uint64_t> R64;
 typedef Vn<vec8_t> V8;
 typedef Vn<vec16_t> V16;
 typedef Vn<vec32_t> V32;
+typedef VnW<vec32_t> V32W;
 typedef Vn<vec64_t> V64;
 typedef VnW<vec64_t> V64W;
 typedef Vn<vec128_t> V128;
