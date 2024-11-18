@@ -33,15 +33,19 @@ char *fs_mark_version = "3.3";
 #include <sys/statfs.h>
 #include <sys/time.h>
 
-#include <fcntl.h>
-#include <stdio.h>
+#include <ctype.h>
+#include <dirent.h>
 #include <errno.h>
-#include <unistd.h>
+#include <fcntl.h>
+#include <float.h>
+#include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dirent.h>
-#include <ctype.h>
+#include <sys/statfs.h>
+#include <sys/time.h>
 #include <time.h>
+#include <unistd.h>
 
 // #include <linux/types.h>
 // #include <linux/limits.h>
@@ -50,6 +54,12 @@ char *fs_mark_version = "3.3";
 #define PATH_MAX 4096
 
 #include "fs_mark.h"
+
+static double second(void)
+
+{
+  return ((double) ((double) clock() / (double) CLOCKS_PER_SEC));
+}
 
 void cleanup_exit(void)
 {
@@ -1359,6 +1369,9 @@ int main(int argc, char **argv, char **envp)
 
 	process_args(argc, argv, envp);
 
+  double start_time = second();
+  printf("start_time: %f\n", start_time);
+
 	/*
 	 * Open the specified log file - at the end, each child's log file will be written out to this one.
 	 * Note that each child uses its copy of this fp for its own sub log file.
@@ -1444,6 +1457,10 @@ int main(int argc, char **argv, char **envp)
 	printf("p50 Files/sec: %llu\n", files_per_sec[nr_iters / 2]);
 	printf("p90 Files/sec: %llu\n", files_per_sec[(nr_iters * 9) / 10]);
 	printf("p99 Files/sec: %llu\n", files_per_sec[(nr_iters * 99) / 100]);
+
+  double end_time = second();
+  printf("end_time: %f\n", end_time);
+  printf("measurement time: %f\n", end_time - start_time);
 
 	return (0);
 }

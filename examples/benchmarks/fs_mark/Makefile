@@ -36,5 +36,5 @@ test: fs_mark
 	./fs_mark -d ${DIR1} -d ${DIR2} -s 51200 -n 4096 -r -D 128
 
 clean:
-	rm -f ${COBJS} fs_mark fs_log.txt *.wasm *.js *.html
+	rm -rf ${COBJS} fs_mark fs_log.txt *.wasm *.js *.html testdir1
 
