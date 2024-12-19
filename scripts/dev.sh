@@ -72,7 +72,7 @@ lifting() {
     --target_elf "$elf_path" \
     --dbg_fun_cfg "$2" \
     --bitcode_path "$3" \
-    --target_arch "$wasi32_target_arch" && \
+    # --target_arch "$wasi32_target_arch" && \
     llvm-dis-${LLVM_VERSION} lift.bc -o lift.ll
   echo -e "[\033[32mINFO\033[0m] lift.bc was generated."
 
