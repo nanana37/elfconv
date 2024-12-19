@@ -15,6 +15,9 @@
  */
 
 // Disable the "loop not unrolled warnings"
+#include "remill/Arch/AArch64/Runtime/Types.h"
+#include "remill/Arch/Runtime/Operators.h"
+#include "remill/Arch/Runtime/Types.h"
 #pragma clang diagnostic ignored "-Wpass-failed"
 
 namespace {
@@ -561,30 +564,30 @@ DEF_ISEL(SMAXP_ASIMDSAME_ONLY_4S) = SMAXP_32<V128, int32v4_t>;
 namespace {
 
 template <typename V, typename B>
-ALWAYS_INLINE static auto Reduce2(const V &vec, B binop,
-                                  size_t base = 0) -> decltype(binop(vec.elems[0], vec.elems[1])) {
+ALWAYS_INLINE static auto Reduce2(const V &vec, B binop, size_t base = 0)
+    -> decltype(binop(vec.elems[0], vec.elems[1])) {
   return binop(vec.elems[base + 0], vec.elems[base + 1]);
 }
 
 template <typename V, typename B>
-ALWAYS_INLINE static auto Reduce4(const V &vec, B binop,
-                                  size_t base = 0) -> decltype(binop(vec.elems[0], vec.elems[1])) {
+ALWAYS_INLINE static auto Reduce4(const V &vec, B binop, size_t base = 0)
+    -> decltype(binop(vec.elems[0], vec.elems[1])) {
   auto lo = Reduce2(vec, binop, base + 0);
   auto hi = Reduce2(vec, binop, base + 2);
   return binop(lo, hi);
 }
 
 template <typename V, typename B>
-ALWAYS_INLINE static auto Reduce8(const V &vec, B binop,
-                                  size_t base = 0) -> decltype(binop(vec.elems[0], vec.elems[1])) {
+ALWAYS_INLINE static auto Reduce8(const V &vec, B binop, size_t base = 0)
+    -> decltype(binop(vec.elems[0], vec.elems[1])) {
   auto lo = Reduce4(vec, binop, base + 0);
   auto hi = Reduce4(vec, binop, base + 4);
   return binop(lo, hi);
 }
 
 template <typename V, typename B>
-ALWAYS_INLINE static auto Reduce16(const V &vec, B binop,
-                                   size_t base = 0) -> decltype(binop(vec.elems[0], vec.elems[1])) {
+ALWAYS_INLINE static auto Reduce16(const V &vec, B binop, size_t base = 0)
+    -> decltype(binop(vec.elems[0], vec.elems[1])) {
   auto lo = Reduce8(vec, binop, base + 0);
   auto hi = Reduce8(vec, binop, base + 8);
   return binop(lo, hi);
@@ -1006,3 +1009,100 @@ MAKE_FONCEOP_ASIMD_INDEX(MUL, 64, Mul);
 DEF_ISEL(FMUL_ASIMDELEM_R_SD_2S) = FMULID_V32<V64W, V64, float32v2_t>;
 DEF_ISEL(FMUL_ASIMDELEM_R_SD_4S) = FMULID_V32<V128W, V128, float32v4_t>;
 DEF_ISEL(FMUL_ASIMDELEM_R_SD_2D) = FMULID_V64<V128W, V128, float64v2_t>;
+
+// REV32  <Vd>.<T>, <Vn>.<T>
+namespace {
+template <typename DV, typename SV, typename V>
+DEF_SEM(REV32_VectorB, DV dst, SV src) {
+  auto srcv = UReadV8(src);
+  V tmpv{};
+  _Pragma("unroll") for (size_t i = 0; i < NumVectorElems(srcv); i += 4) {
+    tmpv.elems[i] = UExtractV8(srcv, i + 3);
+    tmpv.elems[i + 1] = UExtractV8(srcv, i + 2);
+    tmpv.elems[i + 2] = UExtractV8(srcv, i + 1);
+    tmpv.elems[i + 3] = UExtractV8(srcv, i);
+  }
+  UWriteV8(dst, tmpv);
+}
+
+template <typename DV, typename SV, typename V>
+DEF_SEM(REV32_VectorH, DV dst, SV src) {
+  auto srcv = UReadV16(src);
+  V tmpv{};
+  _Pragma("unroll") for (size_t i = 0; i < NumVectorElems(srcv); i += 2) {
+    tmpv.elems[i] = UExtractV16(srcv, i + 1);
+    tmpv.elems[i + 1] = UExtractV16(srcv, i);
+  }
+  UWriteV16(dst, tmpv);
+}
+
+}  // namespace
+
+DEF_ISEL(REV32_ASIMDMISC_R_8B) = REV32_VectorB<V64W, V64, uint8v8_t>;
+DEF_ISEL(REV32_ASIMDMISC_R_16B) = REV32_VectorB<V128W, V128, uint8v16_t>;
+
+DEF_ISEL(REV32_ASIMDMISC_R_4H) = REV32_VectorH<V64W, V64, uint16v4_t>;
+DEF_ISEL(REV32_ASIMDMISC_R_8H) = REV32_VectorH<V128W, V128, uint16v8_t>;
+
+// SCVTF  <Vd>.<T>, <Vn>.<T> (only 32bit or 64bit)
+namespace {
+#define MAKE_SCVTF_VECTOR(elem_size) \
+  template <typename DV, typename SV, typename D> \
+  DEF_SEM(SCVTF_Vector##elem_size, DV dst, SV src) { \
+    auto srcv = SReadV##elem_size(src); \
+    D tmpv{}; \
+    _Pragma("unroll") for (size_t i = 0; i < NumVectorElems(srcv); i++) { \
+      tmpv.elems[i] = CheckedCast<int##elem_size##_t, float##elem_size##_t>(state, srcv.elems[i]); \
+    } \
+    FWriteV##elem_size(dst, tmpv); \
+  }
+
+MAKE_SCVTF_VECTOR(32);
+MAKE_SCVTF_VECTOR(64);
+
+#undef MAKE_SCVTF_VECTOR
+
+}  // namespace
+
+DEF_ISEL(SCVTF_ASIMDMISC_R_2S) = SCVTF_Vector32<V64W, V64, float32v2_t>;
+DEF_ISEL(SCVTF_ASIMDMISC_R_4S) = SCVTF_Vector32<V128W, V128, float32v4_t>;
+DEF_ISEL(SCVTF_ASIMDMISC_R_2D) = SCVTF_Vector64<V128W, V128, float64v2_t>;
+
+// USHLL{2}  <Vd>.<Ta>, <Vn>.<Tb>, #<shift>
+namespace {
+#define MAKE_USHLL(s_elem_size, d_elem_type, d_elem_size) \
+  template <typename D> \
+  DEF_SEM(USHLL_##s_elem_size, V128W dst, V64 src, I64 shift_imm) { \
+    auto srcv = UReadV##s_elem_size(src); \
+    D tmpv{}; \
+    _Pragma("unroll") for (size_t i = 0; i < NumVectorElems(srcv); i++) { \
+      tmpv.elems[i] = (d_elem_type(srcv.elems[i])) << Read(shift_imm); \
+    } \
+    UWriteV##d_elem_size(dst, tmpv); \
+  } \
+\
+  template <typename D> \
+  DEF_SEM(USHLL2_##s_elem_size, V128W dst, V128 src, I64 shift_imm) { \
+    auto srcv = UReadV##s_elem_size(src); \
+    D tmpv{}; \
+    _Pragma("unroll") for (size_t i = NumVectorElems(srcv) / 2; i < NumVectorElems(srcv); i++) { \
+      tmpv.elems[i - NumVectorElems(srcv) / 2] = (d_elem_type(srcv.elems[i])) << Read(shift_imm); \
+    } \
+    UWriteV##d_elem_size(dst, tmpv); \
+  }
+
+MAKE_USHLL(8, uint16_t, 16);
+MAKE_USHLL(16, uint32_t, 32);
+MAKE_USHLL(32, uint64_t, 64);
+
+#undef MAKE_USHLL
+
+}  // namespace
+
+DEF_ISEL(USHLL_ASIMDSHF_L_8H8B) = USHLL_8<uint16v8_t>;
+DEF_ISEL(USHLL_ASIMDSHF_L_4S4H) = USHLL_16<uint32v4_t>;
+DEF_ISEL(USHLL_ASIMDSHF_L_2D2S) = USHLL_32<uint64v2_t>;
+
+DEF_ISEL(USHLL_ASIMDSHF_L_8H16B) = USHLL2_8<uint16v8_t>;
+DEF_ISEL(USHLL_ASIMDSHF_L_4S8H) = USHLL2_16<uint32v4_t>;
+DEF_ISEL(USHLL_ASIMDSHF_L_2D4S) = USHLL2_32<uint64v2_t>;

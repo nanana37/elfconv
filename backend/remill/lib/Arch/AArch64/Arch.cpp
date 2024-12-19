@@ -884,6 +884,54 @@ static bool TryDecodeRdW_Rn_Rm(const InstData &data, Instruction &inst, RegClass
 
 }  // namespace
 
+static void AddQArrangementSpecifier(const InstData &data, Instruction &inst, const char *if_Q,
+                                     const char *if_not_Q) {
+  std::stringstream ss;
+  ss << inst.function << "_" << (data.Q ? if_Q : if_not_Q);
+  inst.function = ss.str();
+}
+
+static const char *ArrangementSpecifier(uint64_t total_size, uint64_t element_size) {
+  if (128 == total_size) {
+    switch (element_size) {
+      case 8: return "16B";
+      case 16: return "8H";
+      case 32: return "4S";
+      case 64: return "2D";
+      default: break;
+    }
+  } else if (64 == total_size) {
+    switch (element_size) {
+      case 8: return "8B";
+      case 16: return "4H";
+      case 32: return "2S";
+      case 64: return "1D";
+      default: break;
+    }
+  }
+
+  LOG(FATAL) << "Can't deduce specifier for " << total_size << "-vector with " << element_size
+             << "-bit elements";
+  return nullptr;
+}
+
+static void AddArrangementSpecifier(Instruction &inst, uint64_t total_size, uint64_t element_size) {
+  std::stringstream ss;
+  ss << inst.function;
+  ss << "_" << ArrangementSpecifier(total_size, element_size);
+  inst.function = ss.str();
+}
+
+static void AddArrangementSpecifierUSHLL(Instruction &inst, uint64_t d_total_size,
+                                         uint64_t d_elem_size, uint64_t s_total_size,
+                                         uint64_t s_elem_size) {
+  std::stringstream ss;
+  ss << inst.function;
+  ss << "_" << ArrangementSpecifier(d_total_size, d_elem_size)
+     << ArrangementSpecifier(s_total_size, s_elem_size);
+  inst.function = ss.str();
+}
+
 // RET  {<Xn>}
 bool TryDecodeRET_64R_BRANCH_REG(const InstData &data, Instruction &inst) {
   AddRegOperand(inst, kActionRead, kRegX, kUseAsValue, data.Rn);
@@ -3330,6 +3378,18 @@ bool TryDecodeFDIV_D_FLOATDP2(const InstData &data, Instruction &inst) {
   return TryDecodeFdW_Fn_Fm(data, inst, kRegD);
 }
 
+// FDIV  <Vd>.<T>, <Vn>.<T>, <Vm>.<T> (only 32bit or 64bit)
+bool TryDecodeFDIV_ASIMDSAME_ONLY(const InstData &data, Instruction &inst) {
+  uint64_t total_size, elem_size;
+  if (1 == data.sz && 0 == data.Q) {
+    return false;
+  }
+  total_size = data.Q ? 128 : 64;
+  elem_size = 32 << data.sz;
+  AddArrangementSpecifier(inst, total_size, elem_size);
+  return TryDecodeRdW_Rn_Rm(data, inst, data.Q ? kRegV : kRegD);
+}
+
 // FSUB  <Hd>, <Hn>, <Hm>
 bool TryDecodeFSUB_H_FLOATDP2(const InstData &data, Instruction &inst) {
   return TryDecodeFdW_Fn_Fm(data, inst, kRegH);
@@ -3343,6 +3403,18 @@ bool TryDecodeFSUB_S_FLOATDP2(const InstData &data, Instruction &inst) {
 // FSUB  <Dd>, <Dn>, <Dm>
 bool TryDecodeFSUB_D_FLOATDP2(const InstData &data, Instruction &inst) {
   return TryDecodeFdW_Fn_Fm(data, inst, kRegD);
+}
+
+// FSUB  <Vd>.<T>, <Vn>.<T>, <Vm>.<T>
+bool TryDecodeFSUB_ASIMDSAME_ONLY(const InstData &data, Instruction &inst) {
+  uint64_t total_size, elem_size;
+  if (1 == data.sz && 0 == data.Q) {
+    return false;
+  }
+  total_size = data.Q ? 128 : 64;
+  elem_size = 32 << data.sz;
+  AddArrangementSpecifier(inst, total_size, elem_size);
+  return TryDecodeRdW_Rn_Rm(data, inst, data.Q ? kRegV : kRegD);
 }
 
 // FMADD  <Sd>, <Sn>, <Sm>, <Sa>
@@ -4141,51 +4213,19 @@ bool TryDecodeREV16_ASIMDMISC_R(const InstData &, Instruction &) {
 }
 
 // REV32  <Vd>.<T>, <Vn>.<T>
-bool TryDecodeREV32_ASIMDMISC_R(const InstData &, Instruction &) {
-  return false;
+bool TryDecodeREV32_ASIMDMISC_R(const InstData &data, Instruction &inst) {
+  uint64_t total_size, elem_size;
+  total_size = data.Q ? 128 : 64;
+  elem_size = data.size ? 16 : 8;
+  AddArrangementSpecifier(inst, total_size, elem_size);
+  AddRegOperand(inst, kActionWrite, data.Q ? kRegV : kRegD, kUseAsValue, data.Rd);
+  AddRegOperand(inst, kActionRead, data.Q ? kRegV : kRegD, kUseAsValue, data.Rn);
+  return true;
 }
 
 // REV64  <Vd>.<T>, <Vn>.<T>
 bool TryDecodeREV64_ASIMDMISC_R(const InstData &, Instruction &) {
   return false;
-}
-
-static void AddQArrangementSpecifier(const InstData &data, Instruction &inst, const char *if_Q,
-                                     const char *if_not_Q) {
-  std::stringstream ss;
-  ss << inst.function << "_" << (data.Q ? if_Q : if_not_Q);
-  inst.function = ss.str();
-}
-
-static const char *ArrangementSpecifier(uint64_t total_size, uint64_t element_size) {
-  if (128 == total_size) {
-    switch (element_size) {
-      case 8: return "16B";
-      case 16: return "8H";
-      case 32: return "4S";
-      case 64: return "2D";
-      default: break;
-    }
-  } else if (64 == total_size) {
-    switch (element_size) {
-      case 8: return "8B";
-      case 16: return "4H";
-      case 32: return "2S";
-      case 64: return "1D";
-      default: break;
-    }
-  }
-
-  LOG(FATAL) << "Can't deduce specifier for " << total_size << "-vector with " << element_size
-             << "-bit elements";
-  return nullptr;
-}
-
-static void AddArrangementSpecifier(Instruction &inst, uint64_t total_size, uint64_t element_size) {
-  std::stringstream ss;
-  ss << inst.function;
-  ss << "_" << ArrangementSpecifier(total_size, element_size);
-  inst.function = ss.str();
 }
 
 // DUP  <Vd>.<T>, <R><n>
@@ -4780,6 +4820,18 @@ bool TryDecodeSCVTF_ASISDMISC_R(const InstData &data, Instruction &inst) {
   return TryDecodeSCVTF_Sn_FLOAT2INT(data, inst, kRegV, kRegV);
 }
 
+// SCVTF  <Vd>.<T>, <Vn>.<T> (only 32bit or 64bit)
+bool TryDecodeSCVTF_ASIMDMISC_R(const InstData &data, Instruction &inst) {
+  uint64_t total_size, elem_size;
+  total_size = data.Q ? 128 : 64;
+  elem_size = data.sz ? 64 : 32;
+  AddArrangementSpecifier(inst, total_size, elem_size);
+  auto rclass = data.Q ? kRegV : kRegD;
+  AddRegOperand(inst, kActionWrite, rclass, kUseAsValue, data.Rd);
+  AddRegOperand(inst, kActionRead, rclass, kUseAsValue, data.Rn);
+  return true;
+}
+
 // BIC  <Vd>.<T>, <Vn>.<T>, <Vm>.<T>
 bool TryDecodeBIC_ASIMDSAME_ONLY(const InstData &data, Instruction &inst) {
   return TryDecodeORR_ASIMDSAME_ONLY(data, inst);
@@ -5251,6 +5303,31 @@ bool TryDecodeUSHR_ASIMDSHF_R(const InstData &data, Instruction &inst) {
   AddRegOperand(inst, kActionWrite, kRegV, kUseAsValue, data.Rd);
   AddRegOperand(inst, kActionRead, kRegV, kUseAsValue, data.Rn);
   AddImmOperand(inst, shift);
+  return true;
+}
+
+// USHLL{2}  <Vd>.<Ta>, <Vn>.<Tb>, #<shift>
+bool TryDecodeUSHLL_ASIMDSHF_L(const InstData &data, Instruction &inst) {
+  uint64_t d_total_size, s_total_size, d_elem_size, s_elem_size, shift_val;
+  d_total_size = 128;
+  s_total_size = data.Q ? 128 : 64;
+  if (data.immh.uimm & 0b0001) {
+    s_elem_size = 8;
+    shift_val = (data.immh.uimm << 3 | data.immb.uimm) - 0b1000;
+  } else if (data.immh.uimm & 0b0010) {
+    s_elem_size = 16;
+    shift_val = (data.immh.uimm << 3 | data.immb.uimm) - 0b1'0000;
+  } else if (data.immh.uimm & 0b0100) {
+    s_elem_size = 32;
+    shift_val = (data.immh.uimm << 3 | data.immb.uimm) - 0b10'0000;
+  } else {
+    LOG(FATAL) << "data.immh is invalid at USHLL instruction at 0x" << std::hex << inst.pc;
+  }
+  d_elem_size = s_elem_size << 1;
+  AddArrangementSpecifierUSHLL(inst, d_total_size, d_elem_size, s_total_size, s_elem_size);
+  AddRegOperand(inst, kActionWrite, kRegV, kUseAsValue, data.Rd);
+  AddRegOperand(inst, kActionRead, data.Q ? kRegV : kRegD, kUseAsValue, data.Rn);
+  AddImmOperand(inst, shift_val);
   return true;
 }
 

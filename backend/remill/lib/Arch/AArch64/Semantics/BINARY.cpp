@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include "remill/Arch/AArch64/Runtime/Types.h"
+#include "remill/Arch/Runtime/Types.h"
 namespace {
 
 template <typename D, typename S1, typename S2>
@@ -246,6 +248,22 @@ DEF_SEM(FSUB_Scalar64, V128W dst, V64 src1, V64 src2) {
   auto sum = CheckedFloatBinOp(state, FSub64, val1, val2);
   FWriteV64(dst, sum);
 }
+
+// FSUB <Vd>.<T>, <Vn>.<T>, <Vm>.<T>
+#define MAKE_FSUB_VECTOR(elem_size) \
+  template <typename DV, typename SV> \
+  DEF_SEM(FSUB_Vector##elem_size, DV dst, SV src1, SV src2) { \
+    auto src1v = FReadV##elem_size(src1); \
+    auto src2v = FReadV##elem_size(src2); \
+    auto tmpv = FSubV##elem_size(src1v, src2v); \
+    FWriteV##elem_size(dst, tmpv); \
+  }
+
+MAKE_FSUB_VECTOR(32);
+MAKE_FSUB_VECTOR(64);
+
+#undef MAKE_FSUB_VECTOR
+
 DEF_SEM(FMUL_Scalar32, V128W dst, V32 src1, V32 src2) {
   auto val1 = FExtractV32(FReadV32(src1), 0);
   auto val2 = FExtractV32(FReadV32(src2), 0);
@@ -266,6 +284,21 @@ DEF_SEM(FDIV_Scalar32, V128W dst, V32 src1, V32 src2) {
   auto prod = CheckedFloatBinOp(state, FDiv32, val1, val2);
   FWriteV32(dst, prod);
 }
+
+// FDIV  <Vd>.<T>, <Vn>.<T>, <Vm>.<T> (only 32bit or 64bit)
+#define MAKE_FDIV_VECTOR(elem_size) \
+  template <typename DV, typename SV> \
+  DEF_SEM(FDIV_Vector##elem_size, DV dst, SV src1, SV src2) { \
+    auto src1v = FReadV##elem_size(src1); \
+    auto src2v = FReadV##elem_size(src2); \
+    auto tmpv = FDivV##elem_size(src1v, src2v); \
+    FWriteV##elem_size(dst, tmpv); \
+  }
+
+MAKE_FDIV_VECTOR(32);
+MAKE_FDIV_VECTOR(64);
+
+#undef MAKE_FDIV_VECTOR
 
 DEF_SEM(FMADD_S, V128W dst, V32 src1, V32 src2, V32 src3) {
   auto factor1 = FExtractV32(FReadV32(src1), 0);
@@ -510,6 +543,9 @@ DEF_SEM(FNEG_D, V128W dst, V64 src) {
 DEF_ISEL(FSUB_S_FLOATDP2) = FSUB_Scalar32;
 DEF_ISEL(FSUB_D_FLOATDP2) = FSUB_Scalar64;
 
+DEF_ISEL(FSUB_ASIMDSAME_ONLY_2S) = FSUB_Vector32<V64W, V64>;  // FSUB <Vd>.<T>, <Vn>.<T>, <Vm>.<T>
+DEF_ISEL(FSUB_ASIMDSAME_ONLY_4S) = FSUB_Vector32<V128W, V128>;  // FSUB <Vd>.<T>, <Vn>.<T>, <Vm>.<T>
+
 DEF_ISEL(FADD_S_FLOATDP2) = FADD_Scalar32;
 DEF_ISEL(FADD_D_FLOATDP2) = FADD_Scalar64;
 
@@ -524,6 +560,9 @@ DEF_ISEL(FMSUB_D_FLOATDP3) = FMSUB_D;
 
 DEF_ISEL(FDIV_S_FLOATDP2) = FDIV_Scalar32;
 DEF_ISEL(FDIV_D_FLOATDP2) = FDIV_Scalar64;
+
+DEF_ISEL(FDIV_ASIMDSAME_ONLY_2S) = FDIV_Vector32<V64W, V64>;  // FDIV <Vd>.<T>, <Vn>.<T>, <Vm>.<T>
+DEF_ISEL(FDIV_ASIMDSAME_ONLY_4S) = FDIV_Vector32<V128W, V128>;  // FDIV <Vd>.<T>, <Vn>.<T>, <Vm>.<T>
 
 DEF_ISEL(FABS_S_FLOATDP1) = FABS_S;
 DEF_ISEL(FABS_D_FLOATDP1) = FABS_D;
