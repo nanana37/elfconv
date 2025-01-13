@@ -321,6 +321,7 @@ void Instruction::Reset(void) {
   prepost_updated_reg_op.reg.name.clear();
   prepost_new_addr_op.addr.base_reg.name.clear();
   prepost_new_addr_op.addr.index_reg.name.clear();
+  sp_base_reg = false;
 }
 
 OperandExpression *Instruction::AllocateExpression(void) {

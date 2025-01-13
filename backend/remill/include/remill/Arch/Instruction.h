@@ -497,6 +497,8 @@ class Instruction {
 
   void SetLifter(InstructionLifter::LifterPtr lifter);
 
+  bool sp_base_reg;
+
  private:
   InstructionLifter::LifterPtr lifter;
   static constexpr auto kMaxNumExpr = 64u;

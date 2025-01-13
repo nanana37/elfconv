@@ -14,7 +14,6 @@
 #  include <remill/Arch/X86/Runtime/State.h>
 #endif
 
-const addr_t STACK_START_VMA = 0x0fff'ff00'0000'0000; /* 65535 TiB FIXME! */
 const size_t STACK_SIZE = 1 * 1024 * 1024; /* 4 MiB */
 const addr_t HEAPS_START_VMA = 0x4000'0000'0000; /* 64 TiB FIXME! */
 const uint64_t HEAP_UNIT_SIZE = 1 * 1024 * 1024 * 1024; /* 1 GiB */

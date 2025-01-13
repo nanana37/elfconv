@@ -599,6 +599,7 @@ static void AddBasePlusOffsetMemOp(Instruction &inst, uint64_t access_size,
   op.action = Operand::kActionRead;
   op.addr.kind = Operand::Address::kMemoryRead;
   inst.operands.push_back(op);
+  inst.sp_base_reg = "SP" == op.addr.base_reg.name;
 }
 
 static constexpr auto kInvalidReg = static_cast<aarch64::RegNum>(0xFF);
@@ -921,6 +922,10 @@ bool AArch64Arch::ArchDecodeInstruction(uint64_t address, std::string_view inst_
            address, inst.function.c_str());
 #endif
     return false;
+  }
+
+  if (inst.sp_base_reg) {
+    inst.function += "_DMA";
   }
 
   // Control flow operands update the next program counter.

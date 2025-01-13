@@ -20,11 +20,14 @@
 #include "remill/Arch/AArch64/Runtime/Types.h"
 #include "remill/Arch/Name.h"
 #include "remill/Arch/Runtime/Float.h"
+#include "remill/Arch/Runtime/Int.h"
 #include "remill/Arch/Runtime/Intrinsics.h"
+#include "remill/Arch/Runtime/Math.h"
 #include "remill/Arch/Runtime/Operators.h"
 #include "remill/Arch/Runtime/Types.h"
 
 #include <cassert>
+#include <cstdint>
 
 namespace {
 
@@ -48,50 +51,137 @@ DEF_SEM_VOID_RUN(StorePairUpdateIndexD, RF64 src1, RF64 src2, MVI128 dst_mem) {
   FWriteMVI64(dst_mem, vec);
 }
 
-DEF_SEM_VOID_RUN(StorePair32, R32 src1, R32 src2, MVI64 dst) {
+DEF_SEM_VOID_RUN(StorePair32, R32 src1, R32 src2, MVI64 dst_mem) {
   _ecv_u32v2_t vec = {Read(src1), Read(src2)};
-  UWriteMVI32(dst, vec);
+  UWriteMVI32(dst_mem, vec);
 }
 
-DEF_SEM_VOID_RUN(StorePair64, R64 src1, R64 src2, MVI128 dst) {
+DEF_SEM_VOID_RUN(StorePair64, R64 src1, R64 src2, MVI128 dst_mem) {
   _ecv_u64v2_t vec = {Read(src1), Read(src2)};
-  UWriteMVI64(dst, vec);
+  UWriteMVI64(dst_mem, vec);
 }
 
-DEF_SEM_VOID_RUN(STP_S, RF32 src1, RF32 src2, MVI64 dst) {
+DEF_SEM_VOID_RUN(STP_S, RF32 src1, RF32 src2, MVI64 dst_mem) {
   _ecv_f32v2_t vec = {Read(src1), Read(src2)};
-  FWriteMVI32(dst, vec);
+  FWriteMVI32(dst_mem, vec);
 }
 
-DEF_SEM_VOID_RUN(STP_D, RF64 src1, RF64 src2, MVI128 dst) {
+DEF_SEM_VOID_RUN(STP_D, RF64 src1, RF64 src2, MVI128 dst_mem) {
   _ecv_f64v2_t vec = {Read(src1), Read(src2)};
-  FWriteMVI64(dst, vec);
+  FWriteMVI64(dst_mem, vec);
 }
 
 #if defined(__x86_64__)
-DEF_SEM_VOID_RUN(STP_Q, VIu64v2 src1, VIu64v2 src2, MVI256 dst) {
+
+DEF_SEM_VOID_RUN(STP_Q, VIu64v2 src1, VIu64v2 src2, MVI256 dst_mem) {
   auto src1_v = *reinterpret_cast<VIu128v1 *>(&src1);
   auto src2_v = *reinterpret_cast<VIu128v1 *>(&src2);
   _ecv_u128v2_t vec = {src1_v[0], src2_v[0]};
-  UWriteMVI128(dst, vec);
+  UWriteMVI128(dst_mem, vec);
 }
 
-DEF_SEM_VOID_RUN(STP_Q_UPDATE_ADDR, VIu64v2 src1, VIu64v2 src2, MVI256 dst) {
+DEF_SEM_VOID_RUN(STP_Q_UPDATE_ADDR, VIu64v2 src1, VIu64v2 src2, MVI256 dst_mem) {
   auto src1_v = *reinterpret_cast<VIu128v1 *>(&src1);
   auto src2_v = *reinterpret_cast<VIu128v1 *>(&src2);
   _ecv_u128v2_t vec = {src1[0], src2[0]};
-  UWriteMVI128(dst, vec);
-}
-#else
-DEF_SEM_VOID_RUN(STP_Q, R128 src1, R128 src2, MVI256 dst) {
-  _ecv_u128v2_t vec = {src1, src2};
-  UWriteMVI128(dst, vec);
+  UWriteMVI128(dst_mem, vec);
 }
 
-DEF_SEM_VOID_RUN(STP_Q_UPDATE_ADDR, R128 src1, R128 src2, MVI256 dst) {
+#else
+
+DEF_SEM_VOID_RUN(STP_Q, R128 src1, R128 src2, MVI256 dst_mem) {
   _ecv_u128v2_t vec = {src1, src2};
-  UWriteMVI128(dst, vec);
+  UWriteMVI128(dst_mem, vec);
 }
+
+DEF_SEM_VOID_RUN(STP_Q_UPDATE_ADDR, R128 src1, R128 src2, MVI256 dst_mem) {
+  _ecv_u128v2_t vec = {src1, src2};
+  UWriteMVI128(dst_mem, vec);
+}
+
+#endif
+
+/*
+  DMA
+*/
+DEF_SEM_VOID_RUN(StorePairUpdateIndex32_DMA, R32 src1, R32 src2, MVI64 dst_mem) {
+  _ecv_u32v2_t vec = {Read(src1), Read(src2)};
+  *(uint32_t *) (dst_mem.addr) = vec[0];
+  *(uint32_t *) (dst_mem.addr + sizeof(uint32_t)) = vec[1];
+}
+
+DEF_SEM_VOID_RUN(StorePairUpdateIndex64_DMA, R64 src1, R64 src2, MVI128 dst_mem) {
+  _ecv_u64v2_t vec = {Read(src1), Read(src2)};
+  *(uint64_t *) (dst_mem.addr) = vec[0];
+  *(uint64_t *) (dst_mem.addr + sizeof(uint64_t)) = vec[1];
+}
+
+DEF_SEM_VOID_RUN(StorePairUpdateIndexS_DMA, RF32 src1, RF32 src2, MVI64 dst_mem) {
+  _ecv_f32v2_t vec = {Read(src1), Read(src2)};
+  *(float32_t *) (dst_mem.addr) = vec[0];
+  *(float32_t *) (dst_mem.addr + sizeof(float32_t)) = vec[1];
+}
+
+DEF_SEM_VOID_RUN(StorePairUpdateIndexD_DMA, RF64 src1, RF64 src2, MVI128 dst_mem) {
+  _ecv_f64v2_t vec = {Read(src1), Read(src2)};
+  *(float64_t *) (dst_mem.addr) = vec[0];
+  *(float64_t *) (dst_mem.addr + sizeof(float64_t)) = vec[1];
+}
+
+DEF_SEM_VOID_RUN(StorePair32_DMA, R32 src1, R32 src2, MVI64 dst_mem) {
+  _ecv_u32v2_t vec = {Read(src1), Read(src2)};
+  *(uint32_t *) (dst_mem.addr) = vec[0];
+  *(uint32_t *) (dst_mem.addr + sizeof(uint32_t)) = vec[1];
+}
+
+DEF_SEM_VOID_RUN(StorePair64_DMA, R64 src1, R64 src2, MVI128 dst_mem) {
+  _ecv_u64v2_t vec = {Read(src1), Read(src2)};
+  *(uint64_t *) (dst_mem.addr) = vec[0];
+  *(uint64_t *) (dst_mem.addr + sizeof(uint64_t)) = vec[1];
+}
+
+DEF_SEM_VOID_RUN(STP_S_DMA, RF32 src1, RF32 src2, MVI64 dst_mem) {
+  _ecv_f32v2_t vec = {Read(src1), Read(src2)};
+  *(float32_t *) (dst_mem.addr) = vec[0];
+  *(float32_t *) (dst_mem.addr + sizeof(float32_t)) = vec[1];
+}
+
+DEF_SEM_VOID_RUN(STP_D_DMA, RF64 src1, RF64 src2, MVI128 dst_mem) {
+  _ecv_f64v2_t vec = {Read(src1), Read(src2)};
+  *(float64_t *) (dst_mem.addr) = vec[0];
+  *(float64_t *) (dst_mem.addr + sizeof(float64_t)) = vec[1];
+}
+
+#if defined(__x86_64__)
+
+DEF_SEM_VOID_RUN(STP_Q_DMA, VIu64v2 src1, VIu64v2 src2, MVI256 dst_mem) {
+  auto src1_v = *reinterpret_cast<VIu128v1 *>(&src1);
+  auto src2_v = *reinterpret_cast<VIu128v1 *>(&src2);
+  *(uint128_t *) (dst_mem.addr) = src1_v[0];
+  *(uint128_t *) (dst_mem.addr + sizeof(uint128_t)) = src2_v[0];
+}
+
+DEF_SEM_VOID_RUN(STP_Q_UPDATE_ADDR_DMA, VIu64v2 src1, VIu64v2 src2, MVI256 dst_mem) {
+  auto src1_v = *reinterpret_cast<VIu128v1 *>(&src1);
+  auto src2_v = *reinterpret_cast<VIu128v1 *>(&src2);
+  *(uint128_t *) (dst_mem.addr) = src1_v[0];
+  *(uint128_t *) (dst_mem.addr + sizeof(uint128_t)) = src2_v[0];
+}
+
+#else
+
+DEF_SEM_VOID_RUN(STP_Q_DMA, R128 src1, R128 src2, MVI256 dst_mem) {
+  _ecv_u128v2_t vec = {src1, src2};
+  *(uint128_t *) (dst_mem.addr) = vec[0];
+  *(uint128_t *) (dst_mem.addr + sizeof(uint128_t)) = vec[1];
+}
+
+DEF_SEM_VOID_RUN(STP_Q_UPDATE_ADDR_DMA, R128 src1, R128 src2, MVI256 dst_mem) {
+  _ecv_u128v2_t vec = {src1, src2};
+  *(uint128_t *) (dst_mem.addr) = vec[0];
+  *(uint128_t *) (dst_mem.addr + sizeof(uint128_t)) = vec[1];
+}
+
 #endif
 
 
@@ -119,6 +209,39 @@ DEF_ISEL(STP_Q_LDSTPAIR_OFF) = STP_Q;  // STP  <Qt1>, <Qt2>, [<Xn|SP>{, #<imm>}]
 DEF_ISEL(STP_Q_LDSTPAIR_PRE) = STP_Q_UPDATE_ADDR;  // STP  <Qt1>, <Qt2>, [<Xn|SP>, #<imm>]!
 DEF_ISEL(STP_Q_LDSTPAIR_POST) = STP_Q_UPDATE_ADDR;  // STP  <Qt1>, <Qt2>, [<Xn|SP>], #<imm>
 
+/*
+  DMA
+*/
+DEF_ISEL(STP_32_LDSTPAIR_PRE_DMA) =
+    StorePairUpdateIndex32_DMA;  // STP  <Wt1>, <Wt2>, [<Xn|SP>, #<imm>]!
+DEF_ISEL(STP_32_LDSTPAIR_POST_DMA) =
+    StorePairUpdateIndex32_DMA;  // STP  <Wt1>, <Wt2>, [<Xn|SP>], #<imm>
+
+DEF_ISEL(STP_64_LDSTPAIR_PRE_DMA) =
+    StorePairUpdateIndex64_DMA;  // STP  <Xt1>, <Xt2>, [<Xn|SP>, #<imm>]!
+DEF_ISEL(STP_64_LDSTPAIR_POST_DMA) =
+    StorePairUpdateIndex64_DMA;  // STP  <Xt1>, <Xt2>, [<Xn|SP>], #<imm>
+
+DEF_ISEL(STP_S_LDSTPAIR_PRE_DMA) =
+    StorePairUpdateIndexS_DMA;  // STP  <St1>, <St2>, [<Xn|SP>, #<imm>]!
+DEF_ISEL(STP_S_LDSTPAIR_POST_DMA) =
+    StorePairUpdateIndexS_DMA;  // STP  <St1>, <St2>, [<Xn|SP>], #<imm>
+
+DEF_ISEL(STP_D_LDSTPAIR_PRE_DMA) =
+    StorePairUpdateIndexD_DMA;  // STP  <Dt1>, <Dt2>, [<Xn|SP>, #<imm>]!
+DEF_ISEL(STP_D_LDSTPAIR_POST_DMA) =
+    StorePairUpdateIndexD_DMA;  // STP  <Dt1>, <Dt2>, [<Xn|SP>], #<imm>
+
+DEF_ISEL(STP_32_LDSTPAIR_OFF_DMA) = StorePair32_DMA;  // STP  <Wt1>, <Wt2>, [<Xn|SP>{, #<imm>}]
+DEF_ISEL(STP_64_LDSTPAIR_OFF_DMA) = StorePair64_DMA;  // STP  <Xt1>, <Xt2>, [<Xn|SP>{, #<imm>}]
+
+DEF_ISEL(STP_S_LDSTPAIR_OFF_DMA) = STP_S_DMA;  // STP  <St1>, <St2>, [<Xn|SP>{, #<imm>}]
+DEF_ISEL(STP_D_LDSTPAIR_OFF_DMA) = STP_D_DMA;  // STP  <Dt1>, <Dt2>, [<Xn|SP>{, #<imm>}]
+
+DEF_ISEL(STP_Q_LDSTPAIR_OFF_DMA) = STP_Q_DMA;  // STP  <Qt1>, <Qt2>, [<Xn|SP>{, #<imm>}]
+DEF_ISEL(STP_Q_LDSTPAIR_PRE_DMA) = STP_Q_UPDATE_ADDR_DMA;  // STP  <Qt1>, <Qt2>, [<Xn|SP>, #<imm>]!
+DEF_ISEL(STP_Q_LDSTPAIR_POST_DMA) = STP_Q_UPDATE_ADDR_DMA;  // STP  <Qt1>, <Qt2>, [<Xn|SP>], #<imm>
+
 namespace {
 
 template <typename S, typename D>
@@ -143,26 +266,26 @@ DEF_SEM_VOID_RUN(StoreUpdateIndex_F64, RF64 src, MVI64 dst_mem) {
 }
 
 template <typename S, typename D>
-DEF_SEM_VOID_RUN(Store, S src, D dst) {
-  MWriteTrunc(dst, Read(src));
+DEF_SEM_VOID_RUN(Store, S src, D dst_mem) {
+  MWriteTrunc(dst_mem, Read(src));
 }
 
 template <typename S, typename D>
-DEF_SEM_VOID_RUN(StoreToOffset, S src, D base, ADDR offset) {
-  MWriteTrunc(DisplaceAddress(base, Read(offset)), Read(src));
+DEF_SEM_VOID_RUN(StoreToOffset, S src, D base_mem, ADDR offset) {
+  MWriteTrunc(DisplaceAddress(base_mem, Read(offset)), Read(src));
 }
 
-DEF_SEM_VOID_RUN(StoreWordToOffset, RF32 src, MVI32 base, ADDR offset) {
-  FWriteMVI32(DisplaceAddress(base, Read(offset)), Read(src));
+DEF_SEM_VOID_RUN(StoreWordToOffset, RF32 src, MVI32 base_mem, ADDR offset) {
+  FWriteMVI32(DisplaceAddress(base_mem, Read(offset)), Read(src));
 }
 
-DEF_SEM_VOID_RUN(StoreDoubleToOffset, RF64 src, MVI64 base, ADDR offset) {
-  FWriteMVI64(DisplaceAddress(base, Read(offset)), Read(src));
+DEF_SEM_VOID_RUN(StoreDoubleToOffset, RF64 src, MVI64 base_mem, ADDR offset) {
+  FWriteMVI64(DisplaceAddress(base_mem, Read(offset)), Read(src));
 }
 
 template <typename S, typename D>  // StoreRelease<R32, M32W>
-DEF_SEM_VOID_RUN(StoreRelease, S src, D dst) {
-  MWriteTrunc(dst, Read(src));
+DEF_SEM_VOID_RUN(StoreRelease, S src, D dst_mem) {
+  MWriteTrunc(dst_mem, Read(src));
   __remill_barrier_store_store(runtime_manager);
 }
 
@@ -172,8 +295,8 @@ DEF_SEM_VOID_RUN(STR_Q_UPDATE_ADDR, VIu64v2 src, MVI128 dst) {
   UWriteMVI128(dst, src_v[0]);
 }
 #else
-DEF_SEM_VOID_RUN(STR_Q_UPDATE_ADDR, R128 src, MVI128 dst) {
-  UWriteMVI128(dst, Read(src));
+DEF_SEM_VOID_RUN(STR_Q_UPDATE_ADDR, R128 src, MVI128 dst_mem) {
+  UWriteMVI128(dst_mem, Read(src));
 }
 #endif
 
@@ -195,6 +318,93 @@ template <typename S, typename D>  // e.g. LDSET_MEMOP<R32, M32W>
 DEF_SEM_T_RUN(LDSET_MEMOP, S src, D dst_src_mem) {
   auto mem_val = ReadMem(dst_src_mem);
   MWriteTrunc(dst_src_mem, UOr(mem_val, Read(src)));
+  return mem_val;
+}
+
+/*
+  DMA
+*/
+template <typename S, typename D>
+DEF_SEM_VOID_RUN(StoreUpdateIndex_DMA, S src, D dst_mem) {
+  using D_base = BaseType<decltype(dst_mem)>::BT;
+  *(D_base *) (dst_mem.addr) = TruncTo<D_base>(Read(src));
+}
+
+DEF_SEM_VOID_RUN(StoreUpdateIndex_S8_DMA, R8 src, MVI8 dst_mem) {
+  *(uint8_t *) (dst_mem.addr) = Read(src);
+}
+
+DEF_SEM_VOID_RUN(StoreUpdateIndex_S16_DMA, R16 src, MVI16 dst_mem) {
+  *(uint16_t *) (dst_mem.addr) = Read(src);
+}
+
+DEF_SEM_VOID_RUN(StoreUpdateIndex_F32_DMA, RF32 src, MVI32 dst_mem) {
+  *(float32_t *) (dst_mem.addr) = Read(src);
+}
+
+DEF_SEM_VOID_RUN(StoreUpdateIndex_F64_DMA, RF64 src, MVI64 dst_mem) {
+  *(float64_t *) (dst_mem.addr) = Read(src);
+}
+
+template <typename S, typename D>
+DEF_SEM_VOID_RUN(Store_DMA, S src, D dst_mem) {
+  using D_base = BaseType<decltype(dst_mem)>::BT;
+  *(D_base *) (dst_mem.addr) = TruncTo<D_base>(Read(src));
+}
+
+template <typename S, typename D>
+DEF_SEM_VOID_RUN(StoreToOffset_DMA, S src, D base_mem, ADDR offset) {
+  using D_base = BaseType<decltype(base_mem)>::BT;
+  *(D_base *) (base_mem.addr + Read(offset)) = TruncTo<D_base>(Read(src));
+}
+
+DEF_SEM_VOID_RUN(StoreWordToOffset_DMA, RF32 src, MVI32 base_mem, ADDR offset) {
+  *(float32_t *) (base_mem.addr + Read(offset)) = Read(src);
+}
+
+DEF_SEM_VOID_RUN(StoreDoubleToOffset_DMA, RF64 src, MVI64 base_mem, ADDR offset) {
+  *(float64_t *) (base_mem.addr + Read(offset)) = Read(src);
+}
+
+template <typename S, typename D>  // StoreRelease<R32, M32W>
+DEF_SEM_VOID_RUN(StoreRelease_DMA, S src, D dst_mem) {
+  using D_base = BaseType<decltype(dst_mem)>::BT;
+  *(D_base *) (dst_mem.addr) = TruncTo<D_base>(Read(src));
+  __remill_barrier_store_store(runtime_manager);
+}
+
+#if defined(__x86_64)
+DEF_SEM_VOID_RUN(STR_Q_UPDATE_ADDR_DMA, VIu64v2 src, MVI128 dst_mem) {
+  auto src_v = *reinterpret_cast<VIu128v1 *>(&src);
+  *(uint128_t *) (dst_mem.addr) = src_v[0];
+}
+#else
+DEF_SEM_VOID_RUN(STR_Q_UPDATE_ADDR_DMA, R128 src, MVI128 dst_mem) {
+  *(uint128_t *) (dst_mem.addr) = Read(src);
+}
+#endif
+
+template <typename S, typename D>  // e.g. SWP_MEMOP<R32, M32W>
+DEF_SEM_T_RUN(SWP_MEMOP_DMA, S src1, D dst_src_mem) {
+  using D_base = BaseType<decltype(dst_src_mem)>::BT;
+  auto mem_val = *(D_base *) (dst_src_mem.addr);
+  *(D_base *) (dst_src_mem.addr) = TruncTo<D_base>(Read(src1));
+  return mem_val;
+}
+
+template <typename S, typename D>  // e.g. LDADD_MEMOP<R32, M32>
+DEF_SEM_T_RUN(LDADD_MEMOP_DMA, S src, D dst_src_mem) {
+  using D_base = BaseType<decltype(dst_src_mem)>::BT;
+  auto mem_val = *(D_base *) (dst_src_mem.addr);
+  *(D_base *) (dst_src_mem.addr) = TruncTo<D_base>(UAdd(mem_val, Read(src)));
+  return mem_val;
+}
+
+template <typename S, typename D>  // e.g. LDSET_MEMOP<R32, M32W>
+DEF_SEM_T_RUN(LDSET_MEMOP_DMA, S src, D dst_src_mem) {
+  using D_base = BaseType<decltype(dst_src_mem)>::BT;
+  auto mem_val = *(D_base *) (dst_src_mem.addr);
+  *(D_base *) (dst_src_mem.addr) = TruncTo<D_base>(UOr(mem_val, Read(src)));
   return mem_val;
 }
 
@@ -280,6 +490,97 @@ DEF_ISEL(LDSETL_64_MEMOP) = LDSET_MEMOP<R64, M64W>;  // LDSETL  <Xs>, <Xt>, [<Xn
 DEF_ISEL(LDSETAL_32_MEMOP) = LDSET_MEMOP<R32, M32W>;  // LDSETAL  <Ws>, <Wt>, [<Xn|SP>]
 DEF_ISEL(LDSETAL_64_MEMOP) = LDSET_MEMOP<R64, M64W>;  // LDSETAL  <Xs>, <Xt>, [<Xn|SP>]
 
+/*
+  DMA
+*/
+DEF_ISEL(STR_32_LDST_IMMPRE_DMA) =
+    StoreUpdateIndex_DMA<R32, M32W>;  // STR  <Wt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(STR_32_LDST_IMMPOST_DMA) =
+    StoreUpdateIndex_DMA<R32, M32W>;  // STR  <Wt>, [<Xn|SP>], #<simm>
+
+DEF_ISEL(STR_64_LDST_IMMPRE_DMA) =
+    StoreUpdateIndex_DMA<R64, M64W>;  // STR  <Xt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(STR_64_LDST_IMMPOST_DMA) =
+    StoreUpdateIndex_DMA<R64, M64W>;  // STR  <Xt>, [<Xn|SP>], #<simm>
+
+DEF_ISEL(STR_B_LDST_IMMPRE_DMA) = StoreUpdateIndex_S8_DMA;  // STR  <Bt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(STR_B_LDST_IMMPOST_DMA) = StoreUpdateIndex_S8_DMA;  // STR  <Bt>, [<Xn|SP>], #<simm>
+
+DEF_ISEL(STR_H_LDST_IMMPRE_DMA) = StoreUpdateIndex_S16_DMA;  // STR  <Ht>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(STR_H_LDST_IMMPOST_DMA) = StoreUpdateIndex_S16_DMA;  // STR  <Ht>, [<Xn|SP>], #<simm>
+
+DEF_ISEL(STR_S_LDST_IMMPRE_DMA) = StoreUpdateIndex_F32_DMA;  // STR  <St>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(STR_S_LDST_IMMPOST_DMA) = StoreUpdateIndex_F32_DMA;  // STR  <St>, [<Xn|SP>], #<simm>
+
+DEF_ISEL(STR_D_LDST_IMMPRE_DMA) = StoreUpdateIndex_F64_DMA;  // STR  <Dt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(STR_D_LDST_IMMPOST_DMA) = StoreUpdateIndex_F64_DMA;  // STR  <Dt>, [<Xn|SP>], #<simm>
+
+DEF_ISEL(STR_32_LDST_POS_DMA) = Store_DMA<R32, M32W>;  // STR  <Wt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(STR_64_LDST_POS_DMA) = Store_DMA<R64, M64W>;  // STR  <Xt>, [<Xn|SP>{, #<pimm>}]
+
+DEF_ISEL(STLR_SL32_LDSTEXCL_DMA) = StoreRelease_DMA<R32, M32W>;  // STLR  <Wt>, [<Xn|SP>{,#0}]
+DEF_ISEL(STLR_SL64_LDSTEXCL_DMA) = StoreRelease_DMA<R64, M64W>;  // STLR  <Xt>, [<Xn|SP>{,#0}]
+
+DEF_ISEL(STRB_32_LDST_POS_DMA) = Store_DMA<R32, M8W>;  // STRB  <Wt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(STRB_32_LDST_IMMPOST_DMA) =
+    StoreUpdateIndex_DMA<R32, M8W>;  // STRB  <Wt>, [<Xn|SP>], #<simm>
+DEF_ISEL(STRB_32_LDST_IMMPRE_DMA) =
+    StoreUpdateIndex_DMA<R32, M8W>;  // STRB  <Wt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(STRB_32B_LDST_REGOFF_DMA) =
+    StoreToOffset_DMA<R32, M8W>;  // STRB  <Wt>, [<Xn|SP>, (<Wm>|<Xm>), <extend> {<amount>}]
+DEF_ISEL(STRB_32BL_LDST_REGOFF_DMA) =
+    StoreToOffset_DMA<R32, M8W>;  // STRB  <Wt>, [<Xn|SP>, <Xm>{, LSL <amount>}]
+
+DEF_ISEL(STRH_32_LDST_REGOFF_DMA) =
+    StoreToOffset_DMA<R32, M16W>;  // STRH  <Wt>, [<Xn|SP>, (<Wm>|<Xm>){, <extend> {<amount>}}]
+DEF_ISEL(STRH_32_LDST_IMMPRE_DMA) =
+    StoreUpdateIndex_DMA<R32, M16W>;  // STRH  <Wt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(STRH_32_LDST_IMMPOST_DMA) =
+    StoreUpdateIndex_DMA<R32, M16W>;  // STRH  <Wt>, [<Xn|SP>], #<simm>
+DEF_ISEL(STRH_32_LDST_POS_DMA) = Store_DMA<R32, M16W>;
+
+DEF_ISEL(STR_32_LDST_REGOFF_DMA) =
+    StoreToOffset_DMA<R32, M32W>;  // STR  <Wt>, [<Xn|SP>, (<Wm>|<Xm>){, <extend> {<amount>}}]
+DEF_ISEL(STR_64_LDST_REGOFF_DMA) =
+    StoreToOffset_DMA<R64, M64W>;  // STR  <Xt>, [<Xn|SP>, (<Wm>|<Xm>){, <extend> {<amount>}}]
+DEF_ISEL(STR_S_LDST_REGOFF_DMA) =
+    StoreWordToOffset_DMA;  // STR  <St>, [<Xn|SP>, (<Wm>|<Xm>){, <extend> {<amount>}}]
+DEF_ISEL(STR_D_LDST_REGOFF_DMA) =
+    StoreDoubleToOffset_DMA;  // STR  <Dt>, [<Xn|SP>, (<Wm>|<Xm>){, <extend> {<amount>}}]
+
+DEF_ISEL(SWP_32_MEMOP_DMA) = SWP_MEMOP_DMA<R32, M32W>;  // SWP  <Ws>, <Wt>, [<Xn|SP>]
+DEF_ISEL(SWP_64_MEMOP_DMA) = SWP_MEMOP_DMA<R64, M64W>;  // SWP  <Xs>, <Xt>, [<Xn|SP>]
+
+DEF_ISEL(SWPA_32_MEMOP_DMA) = SWP_MEMOP_DMA<R32, M32W>;  // SWPA  <Ws>, <Wt>, [<Xn|SP>]
+DEF_ISEL(SWPA_64_MEMOP_DMA) = SWP_MEMOP_DMA<R64, M64W>;  // SWPA  <Xs>, <Xt>, [<Xn|SP>]
+
+DEF_ISEL(SWPL_32_MEMOP_DMA) = SWP_MEMOP_DMA<R32, M32W>;  // SWPL  <Ws>, <Wt>, [<Xn|SP>]
+DEF_ISEL(SWPL_64_MEMOP_DMA) = SWP_MEMOP_DMA<R64, M64W>;  // SWPL  <Xs>, <Xt>, [<Xn|SP>]
+
+DEF_ISEL(LDADD_32_MEMOP_DMA) = LDADD_MEMOP_DMA<R32, M32W>;  // LDADD  <Ws>, <Wt>, [<Xn|SP>]
+DEF_ISEL(LDADD_64_MEMOP_DMA) = LDADD_MEMOP_DMA<R64, M64W>;  // LDADD  <Xs>, <Xt>, [<Xn|SP>]
+
+DEF_ISEL(LDADDA_32_MEMOP_DMA) = LDADD_MEMOP_DMA<R32, M32W>;  // LDADDA  <Ws>, <Wt>, [<Xn|SP>]
+DEF_ISEL(LDADDA_64_MEMOP_DMA) = LDADD_MEMOP_DMA<R64, M64W>;  // LDADDA  <Xs>, <Xt>, [<Xn|SP>]
+
+DEF_ISEL(LDADDL_32_MEMOP_DMA) = LDADD_MEMOP_DMA<R32, M32W>;  // LDADDL  <Ws>, <Wt>, [<Xn|SP>]
+DEF_ISEL(LDADDL_64_MEMOP_DMA) = LDADD_MEMOP_DMA<R64, M64W>;  // LDADDL  <Xs>, <Xt>, [<Xn|SP>]
+
+DEF_ISEL(LDADDAL_32_MEMOP_DMA) = LDADD_MEMOP_DMA<R32, M32W>;  // LDADDAL  <Ws>, <Wt>, [<Xn|SP>]
+DEF_ISEL(LDADDAL_64_MEMOP_DMA) = LDADD_MEMOP_DMA<R64, M64W>;  // LDADDAL  <Xs>, <Xt>, [<Xn|SP>]
+
+DEF_ISEL(LDSET_32_MEMOP_DMA) = LDSET_MEMOP_DMA<R32, M32W>;  // LDSET  <Ws>, <Wt>, [<Xn|SP>]
+DEF_ISEL(LDSET_64_MEMOP_DMA) = LDSET_MEMOP_DMA<R64, M64W>;  // LDSET  <Xs>, <Xt>, [<Xn|SP>]
+
+DEF_ISEL(LDSETA_32_MEMOP_DMA) = LDSET_MEMOP_DMA<R32, M32W>;  // LDSETA  <Ws>, <Wt>, [<Xn|SP>]
+DEF_ISEL(LDSETA_64_MEMOP_DMA) = LDSET_MEMOP_DMA<R64, M64W>;  // LDSETA  <Xs>, <Xt>, [<Xn|SP>]
+
+DEF_ISEL(LDSETL_32_MEMOP_DMA) = LDSET_MEMOP_DMA<R32, M32W>;  // LDSETL  <Ws>, <Wt>, [<Xn|SP>]
+DEF_ISEL(LDSETL_64_MEMOP_DMA) = LDSET_MEMOP_DMA<R64, M64W>;  // LDSETL  <Xs>, <Xt>, [<Xn|SP>]
+
+DEF_ISEL(LDSETAL_32_MEMOP_DMA) = LDSET_MEMOP_DMA<R32, M32W>;  // LDSETAL  <Ws>, <Wt>, [<Xn|SP>]
+DEF_ISEL(LDSETAL_64_MEMOP_DMA) = LDSET_MEMOP_DMA<R64, M64W>;  // LDSETAL  <Xs>, <Xt>, [<Xn|SP>]
+
 namespace {
 
 DEF_SEM_U64U64_RUN(LoadPairUpdateIndex32, MVI64 src_mem) {
@@ -292,6 +593,25 @@ DEF_SEM_U64U64_RUN(LoadPairUpdateIndex64, MVI128 src_mem) {
   return {vec[0], vec[1]};
 }
 
+/*
+  DMA
+*/
+DEF_SEM_U64U64_RUN(LoadPairUpdateIndex32_DMA, MVI64 src_mem) {
+  _ecv_u32v2_t vec;
+  _Pragma("unroll") for (int i = 0; i < GetVectorElemsNum(vec); i++) {
+    vec[i] = *(uint32_t *) (src_mem.addr + i * sizeof(uint32_t));
+  }
+  return {vec[0], vec[1]};
+}
+
+DEF_SEM_U64U64_RUN(LoadPairUpdateIndex64_DMA, MVI128 src_mem) {
+  _ecv_u64v2_t vec;
+  _Pragma("unroll") for (int i = 0; i < GetVectorElemsNum(vec); i++) {
+    vec[i] = *(uint64_t *) (src_mem.addr + i * sizeof(uint64_t));
+  }
+  return {vec[0], vec[1]};
+}
+
 }  // namespace
 
 DEF_ISEL(LDP_32_LDSTPAIR_PRE) = LoadPairUpdateIndex32;  // LDP  <Wt1>, <Wt2>, [<Xn|SP>, #<imm>]!
@@ -299,6 +619,19 @@ DEF_ISEL(LDP_32_LDSTPAIR_POST) = LoadPairUpdateIndex32;  // LDP  <Wt1>, <Wt2>, [
 
 DEF_ISEL(LDP_64_LDSTPAIR_PRE) = LoadPairUpdateIndex64;  // LDP  <Xt1>, <Xt2>, [<Xn|SP>, #<imm>]!
 DEF_ISEL(LDP_64_LDSTPAIR_POST) = LoadPairUpdateIndex64;  // LDP  <Xt1>, <Xt2>, [<Xn|SP>], #<imm>
+
+/*
+  DMA
+*/
+DEF_ISEL(LDP_32_LDSTPAIR_PRE_DMA) =
+    LoadPairUpdateIndex32_DMA;  // LDP  <Wt1>, <Wt2>, [<Xn|SP>, #<imm>]!
+DEF_ISEL(LDP_32_LDSTPAIR_POST_DMA) =
+    LoadPairUpdateIndex32_DMA;  // LDP  <Wt1>, <Wt2>, [<Xn|SP>], #<imm>
+
+DEF_ISEL(LDP_64_LDSTPAIR_PRE_DMA) =
+    LoadPairUpdateIndex64_DMA;  // LDP  <Xt1>, <Xt2>, [<Xn|SP>, #<imm>]!
+DEF_ISEL(LDP_64_LDSTPAIR_POST_DMA) =
+    LoadPairUpdateIndex64_DMA;  // LDP  <Xt1>, <Xt2>, [<Xn|SP>], #<imm>
 
 namespace {
 
@@ -312,10 +645,35 @@ DEF_SEM_U64U64_RUN(LoadPair64, MVI128 src_mem) {
   return {vec[0], vec[1]};
 }
 
+/*
+  DMA
+*/
+DEF_SEM_U64U64_RUN(LoadPair32_DMA, MVI64 src_mem) {
+  _ecv_u32v2_t vec;
+  _Pragma("unroll") for (int i = 0; i < GetVectorElemsNum(vec); i++) {
+    vec[i] = *(uint32_t *) (src_mem.addr + i * sizeof(uint32_t));
+  }
+  return {vec[0], vec[1]};
+}
+
+DEF_SEM_U64U64_RUN(LoadPair64_DMA, MVI128 src_mem) {
+  _ecv_u64v2_t vec;
+  _Pragma("unroll") for (int i = 0; i < GetVectorElemsNum(vec); i++) {
+    vec[i] = *(uint64_t *) (src_mem.addr + i * sizeof(uint64_t));
+  }
+  return {vec[0], vec[1]};
+}
+
 }  // namespace
 
 DEF_ISEL(LDP_32_LDSTPAIR_OFF) = LoadPair32;  // LDP  <Wt1>, <Wt2>, [<Xn|SP>{, #<imm>}]
 DEF_ISEL(LDP_64_LDSTPAIR_OFF) = LoadPair64;  // LDP  <Xt1>, <Xt2>, [<Xn|SP>{, #<imm>}]
+
+/*
+  DMA
+*/
+DEF_ISEL(LDP_32_LDSTPAIR_OFF_DMA) = LoadPair32_DMA;  // LDP  <Wt1>, <Wt2>, [<Xn|SP>{, #<imm>}]
+DEF_ISEL(LDP_64_LDSTPAIR_OFF_DMA) = LoadPair64_DMA;  // LDP  <Xt1>, <Xt2>, [<Xn|SP>{, #<imm>}]
 
 namespace {
 
@@ -329,6 +687,25 @@ DEF_SEM_U64U64_RUN(LoadSignedPairUpdateIndex64, MVI64 src_mem) {
   return {ZExtTo<uint64_t>(SExtTo<int64_t>(vec[0])), ZExtTo<uint64_t>(SExtTo<int64_t>(vec[1]))};
 }
 
+/*
+  DMA
+*/
+DEF_SEM_U64U64_RUN(LoadSignedPair64_DMA, MVI64 src_mem) {
+  _ecv_i32v2_t vec;
+  _Pragma("unroll") for (int i = 0; i < GetVectorElemsNum(vec); i++) {
+    vec[i] = *(int32_t *) (src_mem.addr + i * sizeof(int32_t));
+  }
+  return {ZExtTo<uint64_t>(SExtTo<int64_t>(vec[0])), ZExtTo<uint64_t>(SExtTo<int64_t>(vec[1]))};
+}
+
+DEF_SEM_U64U64_RUN(LoadSignedPairUpdateIndex64_DMA, MVI64 src_mem) {
+  _ecv_i32v2_t vec;
+  _Pragma("unroll") for (int i = 0; i < GetVectorElemsNum(vec); i++) {
+    vec[i] = *(int32_t *) (src_mem.addr + i * sizeof(int32_t));
+  }
+  return {ZExtTo<uint64_t>(SExtTo<int64_t>(vec[0])), ZExtTo<uint64_t>(SExtTo<int64_t>(vec[1]))};
+}
+
 }  // namespace
 
 DEF_ISEL(LDPSW_64_LDSTPAIR_OFF) = LoadSignedPair64;  // LDPSW <Xt1>, <Xt2>, [<Xn|SP>], #<imm>
@@ -336,6 +713,16 @@ DEF_ISEL(LDPSW_64_LDSTPAIR_PRE) =
     LoadSignedPairUpdateIndex64;  // LDPSW  <Xt1>, <Xt2>, [<Xn|SP>, #<imm>]!
 DEF_ISEL(LDPSW_64_LDSTPAIR_POST) =
     LoadSignedPairUpdateIndex64;  // LDPSW  <Xt1>, <Xt2>, [<Xn|SP>], #<imm>
+
+/*
+  DMA
+*/
+DEF_ISEL(LDPSW_64_LDSTPAIR_OFF_DMA) =
+    LoadSignedPair64_DMA;  // LDPSW <Xt1>, <Xt2>, [<Xn|SP>], #<imm>
+DEF_ISEL(LDPSW_64_LDSTPAIR_PRE_DMA) =
+    LoadSignedPairUpdateIndex64_DMA;  // LDPSW  <Xt1>, <Xt2>, [<Xn|SP>, #<imm>]!
+DEF_ISEL(LDPSW_64_LDSTPAIR_POST_DMA) =
+    LoadSignedPairUpdateIndex64_DMA;  // LDPSW  <Xt1>, <Xt2>, [<Xn|SP>], #<imm>
 
 namespace {
 
@@ -373,6 +760,46 @@ template <typename M>  // e.g. LoadMemFromOffset<M8>
 DEF_SEM_U64_RUN(LoadMemFromOffset_64, M base, ADDR offset) {
   return ReadMem(DisplaceAddress(base, Read(offset)));
 }
+
+/*
+  DMA
+*/
+template <typename S>  // e.g. Load<M8>
+DEF_SEM_U32_RUN(LoadMem_32_DMA, S src_mem) {
+  using src_type = BaseType<decltype(src_mem)>::BT;
+  return *(src_type *) (src_mem.addr);
+}
+
+template <typename S>  // e.g. Load<M8>
+DEF_SEM_U64_RUN(LoadMem_64_DMA, S src_mem) {
+  using src_type = BaseType<decltype(src_mem)>::BT;
+  return *(src_type *) (src_mem.addr);
+}
+
+template <typename S>  // e.g. LoadUpdateIndex<M8>
+DEF_SEM_U32_RUN(LoadMemUpdateIndex_32_DMA, S src_mem) {
+  using src_type = BaseType<decltype(src_mem)>::BT;
+  return *(src_type *) (src_mem.addr);
+}
+
+template <typename S>  // e.g. LoadUpdateIndex<M64>
+DEF_SEM_U64_RUN(LoadMemUpdateIndex_64_DMA, S src_mem) {
+  using src_type = BaseType<decltype(src_mem)>::BT;
+  return *(src_type *) (src_mem.addr);
+}
+
+template <typename M>  // e.g. LoadMemFromOffset<M8>
+DEF_SEM_U32_RUN(LoadMemFromOffset_32_DMA, M base_mem, ADDR offset) {
+  using base_type = BaseType<decltype(base_mem)>::BT;
+  return *(base_type *) (base_mem.addr + Read(offset));
+}
+
+template <typename M>  // e.g. LoadMemFromOffset<M8>
+DEF_SEM_U64_RUN(LoadMemFromOffset_64_DMA, M base_mem, ADDR offset) {
+  using base_type = BaseType<decltype(base_mem)>::BT;
+  return *(base_type *) (base_mem.addr + Read(offset));
+}
+
 }  // namespace
 
 DEF_ISEL(LDRB_32_LDST_POS) = LoadMem_32<M8>;  // LDRB  <Wt>, [<Xn|SP>{, #<pimm>}]
@@ -416,6 +843,54 @@ DEF_ISEL(STUR_64_LDST_UNSCALED) = Store<R64, M64W>;  // STUR  <Xt>, [<Xn|SP>{, #
 DEF_ISEL(MOVZ_32_MOVEWIDE) = Load<I32>;  // MOVZ  <Wd>, #<imm>{, LSL #<shift>}
 DEF_ISEL(MOVZ_64_MOVEWIDE) = Load<I64>;  // MOVZ  <Xd>, #<imm>{, LSL #<shift>}
 
+/*
+  DMA
+*/
+DEF_ISEL(LDRB_32_LDST_POS_DMA) = LoadMem_32_DMA<M8>;  // LDRB  <Wt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(LDRB_32_LDST_IMMPOST_DMA) =
+    LoadMemUpdateIndex_32_DMA<M8>;  // LDRB  <Wt>, [<Xn|SP>], #<simm>
+DEF_ISEL(LDRB_32_LDST_IMMPRE_DMA) =
+    LoadMemUpdateIndex_32_DMA<M8>;  // LDRB  <Wt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(LDRB_32B_LDST_REGOFF_DMA) =
+    LoadMemFromOffset_32_DMA<M8>;  // LDRB  <Wt>, [<Xn|SP>, (<Wm>|<Xm>), <extend> {<amount>}]
+DEF_ISEL(LDRB_32BL_LDST_REGOFF_DMA) =
+    LoadMemFromOffset_32_DMA<M8>;  // LDRB  <Wt>, [<Xn|SP>, <Xm>{, LSL <amount>}]
+
+DEF_ISEL(LDRH_32_LDST_POS_DMA) = LoadMem_32_DMA<M16>;  // LDRH  <Wt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(LDRH_32_LDST_IMMPOST_DMA) =
+    LoadMemUpdateIndex_32_DMA<M16>;  // LDRH  <Wt>, [<Xn|SP>], #<simm>
+DEF_ISEL(LDRH_32_LDST_IMMPRE_DMA) =
+    LoadMemUpdateIndex_32_DMA<M16>;  // LDRH  <Wt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(LDRH_32_LDST_REGOFF_DMA) =
+    LoadMemFromOffset_32_DMA<M16>;  // LDRH  <Wt>, [<Xn|SP>, (<Wm>|<Xm>){, <extend> {<amount>}}]
+
+DEF_ISEL(LDR_32_LDST_POS_DMA) = LoadMem_32_DMA<M32>;  // LDR  <Wt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(LDR_32_LDST_IMMPOST_DMA) =
+    LoadMemUpdateIndex_32_DMA<M32>;  // LDR  <Wt>, [<Xn|SP>], #<simm>
+DEF_ISEL(LDR_32_LDST_IMMPRE_DMA) =
+    LoadMemUpdateIndex_32_DMA<M32>;  // LDR  <Wt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(LDR_32_LDST_REGOFF_DMA) =
+    LoadMemFromOffset_32_DMA<M32>;  // LDR  <Wt>, [<Xn|SP>, (<Wm>|<Xm>){, <extend> {<amount>}}]
+DEF_ISEL(LDR_32_LOADLIT_DMA) = LoadMem_32_DMA<M32>;  // LDR  <Wt>, <label>
+
+DEF_ISEL(LDR_64_LDST_POS_DMA) = LoadMem_64_DMA<M64>;  // LDR  <Xt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(LDR_64_LDST_IMMPOST_DMA) =
+    LoadMemUpdateIndex_64_DMA<M64>;  // LDR  <Xt>, [<Xn|SP>], #<simm>
+DEF_ISEL(LDR_64_LDST_IMMPRE_DMA) =
+    LoadMemUpdateIndex_64_DMA<M64>;  // LDR  <Xt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(LDR_64_LDST_REGOFF_DMA) =
+    LoadMemFromOffset_64_DMA<M64>;  // LDR  <Xt>, [<Xn|SP>, (<Wm>|<Xm>){, <extend> {<amount>}}]
+DEF_ISEL(LDR_64_LOADLIT_DMA) = LoadMem_64_DMA<M64>;  // LDRSW  <Xt>, <label>
+
+DEF_ISEL(LDURB_32_LDST_UNSCALED_DMA) = LoadMem_32_DMA<M8>;  // LDURB  <Wt>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(LDURH_32_LDST_UNSCALED_DMA) = LoadMem_32_DMA<M16>;  // LDURH  <Wt>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(LDUR_32_LDST_UNSCALED_DMA) = LoadMem_32_DMA<M32>;  // LDUR  <Wt>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(LDUR_64_LDST_UNSCALED_DMA) = LoadMem_64_DMA<M64>;  // LDUR  <Xt>, [<Xn|SP>{, #<simm>}]
+
+DEF_ISEL(STURB_32_LDST_UNSCALED_DMA) = Store_DMA<R32, M8W>;  // STURB  <Wt>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(STURH_32_LDST_UNSCALED_DMA) = Store_DMA<R32, M16W>;  // STURH  <Wt>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(STUR_32_LDST_UNSCALED_DMA) = Store_DMA<R32, M32W>;  // STUR  <Wt>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(STUR_64_LDST_UNSCALED_DMA) = Store_DMA<R64, M64W>;  // STUR  <Xt>, [<Xn|SP>{, #<simm>}]
 
 namespace {
 
@@ -469,6 +944,65 @@ DEF_SEM_U32U64_RUN(STXR, S src1, D dst, R64 monitor) {
   return {check, 0_u64};
 }
 
+/*
+  DMA
+*/
+template <typename S>  // e.g. LDXR<M32>
+DEF_SEM_U32U64_RUN(LDXR_32_DMA, S src_mem) {
+  using src_type = BaseType<decltype(src_mem)>::BT;
+  return {*(src_type *) (src_mem.addr), AddressOf(src_mem)};
+}
+
+template <typename S>  // e.g. LDXR<M64>
+DEF_SEM_U64U64_RUN(LDXR_64_DMA, S src_mem) {
+  using src_type = BaseType<decltype(src_mem)>::BT;
+  return {*(src_type *) (src_mem.addr), AddressOf(src_mem)};
+}
+
+template <typename S>  // e.g. LDAXR<M32>
+DEF_SEM_U32U64_RUN(LDAXR_32_DMA, S src_mem) {
+  __remill_barrier_load_store(runtime_manager);
+  using src_type = BaseType<decltype(src_mem)>::BT;
+  return {*(src_type *) (src_mem.addr), AddressOf(src_mem)};
+}
+
+template <typename S>  // e.g. LDAXR<M64>
+DEF_SEM_U64U64_RUN(LDAXR_64_DMA, S src_mem) {
+  __remill_barrier_load_store(runtime_manager);
+  using src_type = BaseType<decltype(src_mem)>::BT;
+  return {*(src_type *) (src_mem.addr), AddressOf(src_mem)};
+}
+
+template <typename S, typename D>  // e.g. STLXR<R32, M32W>
+DEF_SEM_U32U64_RUN(STLXR_DMA, S src1, D dst_mem, R64 monitor) {
+  auto old_addr = Read(monitor);
+  uint32_t check;
+  if (old_addr == AddressOf(dst_mem)) {
+    using dst_type = BaseType<decltype(dst_mem)>::BT;
+    *(dst_type *) (dst_mem.addr) = ZExtTo<dst_type>(Read(src1));
+    check = 0;  // Store succeeded.
+  } else {
+    check = 1;  // Store failed.
+  }
+  __remill_barrier_store_store(runtime_manager);
+  return {check, 0_u64};
+}
+
+template <typename S, typename D>  // e.g. STXR<R32, M32W>
+DEF_SEM_U32U64_RUN(STXR_DMA, S src1, D dst_mem, R64 monitor) {
+  auto old_addr = Read(monitor);
+  uint32_t check;
+  if (old_addr == AddressOf(dst_mem)) {
+    using dst_type = BaseType<decltype(dst_mem)>::BT;
+    *(dst_type *) (dst_mem.addr) = ZExtTo<dst_type>(Read(src1));
+    check = 0;  // Store succeeded.
+  } else {
+    check = 1;  // Store failed.
+  }
+  __remill_barrier_store_store(runtime_manager);
+  return {check, 0_u64};
+}
+
 }  // namespace
 
 DEF_ISEL(LDXR_LR32_LDSTEXCL) =
@@ -481,6 +1015,20 @@ DEF_ISEL(STLXR_SR32_LDSTEXCL) = STLXR<R32, M32W>;  // STLXR  <Ws>, <Wt>, [<Xn|SP
 DEF_ISEL(STLXR_SR64_LDSTEXCL) = STLXR<R64, M64W>;  // STLXR  <Ws>, <Xt>, [<Xn|SP>{,#0}]
 DEF_ISEL(STXR_SR32_LDSTEXCL) = STXR<R32, M32W>;  // STXR  <Ws>, <Wt>, [<Xn|SP>{,#0}]
 DEF_ISEL(STXR_SR64_LDSTEXCL) = STXR<R64, M64W>;  // STXR  <Ws>, <Xt>, [<Xn|SP>{,#0}]
+
+/*
+  DMA
+*/
+DEF_ISEL(LDXR_LR32_LDSTEXCL_DMA) =
+    LDXR_32_DMA<M32>;  // LDAXR  <Wt>, [<Xn|SP>{,#0}] // LDXR  <Wt>, [<Xn|SP>{,#0}]
+DEF_ISEL(LDXR_LR64_LDSTEXCL_DMA) =
+    LDXR_64_DMA<M64>;  // LDAXR  <Xt>, [<Xn|SP>{,#0}]  // LDXR  <Xt>, [<Xn|SP>{,#0}]
+DEF_ISEL(LDAXR_LR32_LDSTEXCL_DMA) = LDAXR_32_DMA<M32>;  // LDAXR  <Wt>, [<Xn|SP>{,#0}]
+DEF_ISEL(LDAXR_LR64_LDSTEXCL_DMA) = LDAXR_64_DMA<M64>;  // LDAXR  <Xt>, [<Xn|SP>{,#0}]
+DEF_ISEL(STLXR_SR32_LDSTEXCL_DMA) = STLXR_DMA<R32, M32W>;  // STLXR  <Ws>, <Wt>, [<Xn|SP>{,#0}]
+DEF_ISEL(STLXR_SR64_LDSTEXCL_DMA) = STLXR_DMA<R64, M64W>;  // STLXR  <Ws>, <Xt>, [<Xn|SP>{,#0}]
+DEF_ISEL(STXR_SR32_LDSTEXCL_DMA) = STXR_DMA<R32, M32W>;  // STXR  <Ws>, <Wt>, [<Xn|SP>{,#0}]
+DEF_ISEL(STXR_SR64_LDSTEXCL_DMA) = STXR_DMA<R64, M64W>;  // STXR  <Ws>, <Xt>, [<Xn|SP>{,#0}]
 
 namespace {
 
@@ -512,6 +1060,45 @@ DEF_SEM_U32_RUN(LoadSExtFromOffset32, M base, ADDR offset) {
 template <typename M, typename InterType>  // e.g. LoadSExtFromOffset<M8, int32_t>
 DEF_SEM_U64_RUN(LoadSExtFromOffset64, M base, ADDR offset) {
   return static_cast<uint64_t>(SExtTo<InterType>(ReadMem(DisplaceAddress(base, Read(offset)))));
+}
+
+/*
+  DMA
+*/
+template <typename S, typename InterType>  // e.g. LoadSExt<M8, int32_t>
+DEF_SEM_U32_RUN(LoadSExt32_DMA, S src_mem) {
+  using src_type = BaseType<decltype(src_mem)>::BT;
+  return static_cast<uint32_t>(SExtTo<InterType>(*(src_type *) (src_mem.addr)));
+}
+
+template <typename S, typename InterType>  // e.g. LoadSExt<M8, int32_t>
+DEF_SEM_U64_RUN(LoadSExt_DMA, S src_mem) {
+  using src_type = BaseType<decltype(src_mem)>::BT;
+  return static_cast<uint64_t>(SExtTo<InterType>(*(src_type *) (src_mem.addr)));
+}
+
+template <typename S, typename InterType>  // e.g. LoadSExtUpdateIndex<M8, int32_t>
+DEF_SEM_U32_RUN(LoadSExtUpdateIndex32_DMA, S src_mem) {
+  using src_type = BaseType<decltype(src_mem)>::BT;
+  return static_cast<uint32_t>(SExtTo<InterType>(*(src_type *) (src_mem.addr)));
+}
+
+template <typename S, typename InterType>  // e.g. LoadSExtUpdateIndex<M8, int32_t>
+DEF_SEM_U64_RUN(LoadSExtUpdateIndex64_DMA, S src_mem) {
+  using src_type = BaseType<decltype(src_mem)>::BT;
+  return static_cast<uint64_t>(SExtTo<InterType>(*(src_type *) (src_mem.addr)));
+}
+
+template <typename M, typename InterType>  // e.g. LoadSExtFromOffset<M8, int32_t>
+DEF_SEM_U32_RUN(LoadSExtFromOffset32_DMA, M base_mem, ADDR offset) {
+  using base_type = BaseType<decltype(base_mem)>::BT;
+  return static_cast<uint32_t>(SExtTo<InterType>(*(base_type *) (base_mem.addr + Read(offset))));
+}
+
+template <typename M, typename InterType>  // e.g. LoadSExtFromOffset<M8, int32_t>
+DEF_SEM_U64_RUN(LoadSExtFromOffset64_DMA, M base_mem, ADDR offset) {
+  using base_type = BaseType<decltype(base_mem)>::BT;
+  return static_cast<uint64_t>(SExtTo<InterType>(*(base_type *) (base_mem.addr + Read(offset))));
 }
 
 }  // namespace
@@ -563,6 +1150,61 @@ DEF_ISEL(LDRSW_64_LDST_IMMPRE) =
 DEF_ISEL(LDRSW_64_LDST_REGOFF) = LoadSExtFromOffset64<
     M32, int64_t>;  // LDRSW  <Xt>, [<Xn|SP>, (<Wm>|<Xm>){, <extend> {<amount>}}]
 DEF_ISEL(LDRSW_64_LOADLIT) = LoadSExt<M32, int64_t>;  // LDRSW  <Xt>, <label>
+
+/*
+  DMA
+*/
+DEF_ISEL(LDURSB_32_LDST_UNSCALED_DMA) =
+    LoadSExt_DMA<M8, int32_t>;  // LDURSB  <Wt>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(LDURSH_32_LDST_UNSCALED_DMA) =
+    LoadSExt_DMA<M16, int32_t>;  // LDURSH  <Wt>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(LDURSH_64_LDST_UNSCALED_DMA) =
+    LoadSExt_DMA<M16, int64_t>;  // LDURSH  <Xt>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(LDURSW_64_LDST_UNSCALED_DMA) =
+    LoadSExt_DMA<M32, int64_t>;  // LDURSW  <Xt>, [<Xn|SP>{, #<simm>}]
+
+DEF_ISEL(LDRSB_32_LDST_POS_DMA) = LoadSExt_DMA<M8, int32_t>;  // LDRSB  <Wt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(LDRSB_64_LDST_POS_DMA) = LoadSExt_DMA<M8, int64_t>;  // LDRSB  <Xt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(LDRSB_32_LDST_IMMPOST_DMA) =
+    LoadSExtUpdateIndex32_DMA<M8, int32_t>;  // LDRSB  <Wt>, [<Xn|SP>], #<simm>
+DEF_ISEL(LDRSB_64_LDST_IMMPOST_DMA) =
+    LoadSExtUpdateIndex64_DMA<M8, int64_t>;  // LDRSB  <Xt>, [<Xn|SP>], #<simm>
+DEF_ISEL(LDRSB_32_LDST_IMMPRE_DMA) =
+    LoadSExtUpdateIndex32_DMA<M8, int32_t>;  // LDRSB  <Wt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(LDRSB_64_LDST_IMMPRE_DMA) =
+    LoadSExtUpdateIndex64_DMA<M8, int64_t>;  // LDRSB  <Xt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(LDRSB_32B_LDST_REGOFF_DMA) = LoadSExtFromOffset32_DMA<
+    M8, int32_t>;  // LDRSB  <Wt>, [<Xn|SP>, (<Wm>|<Xm>), <extend> {<amount>}]
+DEF_ISEL(LDRSB_32BL_LDST_REGOFF_DMA) =
+    LoadSExtFromOffset32_DMA<M8, int32_t>;  // LDRSB  <Wt>, [<Xn|SP>, <Xm>{, LSL <amount>}]
+DEF_ISEL(LDRSB_64B_LDST_REGOFF_DMA) = LoadSExtFromOffset64_DMA<
+    M8, int64_t>;  // LDRSB  <Xt>, [<Xn|SP>, (<Wm>|<Xm>), <extend> {<amount>}]
+DEF_ISEL(LDRSB_64BL_LDST_REGOFF_DMA) =
+    LoadSExtFromOffset64_DMA<M8, int64_t>;  // LDRSB  <Xt>, [<Xn|SP>, <Xm>{, LSL <amount>}]
+
+DEF_ISEL(LDRSH_32_LDST_POS_DMA) = LoadSExt_DMA<M16, int32_t>;  // LDRH  <Wt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(LDRSH_64_LDST_POS_DMA) = LoadSExt_DMA<M16, int64_t>;  // LDRSH  <Xt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(LDRSH_32_LDST_IMMPOST_DMA) =
+    LoadSExtUpdateIndex32_DMA<M16, int32_t>;  // LDRH  <Wt>, [<Xn|SP>], #<simm>
+DEF_ISEL(LDRSH_64_LDST_IMMPOST_DMA) =
+    LoadSExtUpdateIndex64_DMA<M16, int64_t>;  // LDRSH  <Xt>, [<Xn|SP>], #<simm>
+DEF_ISEL(LDRSH_32_LDST_IMMPRE_DMA) =
+    LoadSExtUpdateIndex32_DMA<M16, int32_t>;  // LDRSH  <Wt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(LDRSH_64_LDST_IMMPRE_DMA) =
+    LoadSExtUpdateIndex64_DMA<M16, int64_t>;  // LDRSH  <Xt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(LDRSH_32_LDST_REGOFF_DMA) = LoadSExtFromOffset32_DMA<
+    M16, int32_t>;  // LDRSH  <Wt>, [<Xn|SP>, (<Wm>|<Xm>){, <extend> {<amount>}}]
+DEF_ISEL(LDRSH_64_LDST_REGOFF_DMA) = LoadSExtFromOffset64_DMA<
+    M16, int64_t>;  // LDRSH  <Xt>, [<Xn|SP>, (<Wm>|<Xm>){, <extend> {<amount>}}]
+
+DEF_ISEL(LDRSW_64_LDST_POS_DMA) = LoadSExt_DMA<M32, int64_t>;  // LDRSW  <Xt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(LDRSW_64_LDST_IMMPOST_DMA) =
+    LoadSExtUpdateIndex64_DMA<M32, int64_t>;  // LDRSW  <Xt>, [<Xn|SP>], #<simm>
+DEF_ISEL(LDRSW_64_LDST_IMMPRE_DMA) =
+    LoadSExtUpdateIndex64_DMA<M32, int64_t>;  // LDRSW  <Xt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(LDRSW_64_LDST_REGOFF_DMA) = LoadSExtFromOffset64_DMA<
+    M32, int64_t>;  // LDRSW  <Xt>, [<Xn|SP>, (<Wm>|<Xm>){, <extend> {<amount>}}]
+DEF_ISEL(LDRSW_64_LOADLIT_DMA) = LoadSExt_DMA<M32, int64_t>;  // LDRSW  <Xt>, <label>
 
 namespace {
 
@@ -718,6 +1360,71 @@ DEF_SEM_U128V1_RUN(LDR_Q_FromOffset, MVI128 src, ADDR offset) {
   return UReadMVI128(DisplaceAddress(src, Read(offset)));
 }
 
+/*
+  DMA
+*/
+DEF_SEM_U8_RUN(LDR_B_DMA, MVI8 src_mem) {
+  return (*(_ecv_u8v1_t *) (src_mem.addr))[0];
+}
+
+DEF_SEM_U16_RUN(LDR_H_DMA, MVI16 src_mem) {
+  return (*(_ecv_u16v1_t *) (src_mem.addr))[0];
+}
+
+DEF_SEM_F32_RUN(LDR_S_DMA, MVI32 src_mem) {
+  return (*(_ecv_f32v1_t *) (src_mem.addr))[0];
+}
+
+DEF_SEM_F64_RUN(LDR_D_DMA, MVI64 src_mem) {
+  return (*(_ecv_f64v1_t *) (src_mem.addr))[0];
+}
+
+DEF_SEM_U128V1_RUN(LDR_Q_DMA, MVI128 src_mem) {
+  return *(_ecv_u128v1_t *) (src_mem.addr);
+}
+
+// DEF_SEM(LDR_B_UpdateIndex, VI128 dst, MVI8 src, ADDR next_addr) {
+//   UWriteVI8(dst, UReadVI8(src));
+//   Write(dst_reg, Read(next_addr));
+// }
+
+// DEF_SEM(LDR_H_UpdateIndex, VI128 dst, MVI16 src, ADDR next_addr) {
+//   UWriteVI16(dst, UReadVI16(src));
+//   Write(dst_reg, Read(next_addr));
+// }
+
+DEF_SEM_F32_RUN(LDR_S_UpdateIndex_DMA, MVI32 src_mem) {
+  return (*(_ecv_f32v1_t *) (src_mem.addr))[0];
+}
+
+DEF_SEM_F64_RUN(LDR_D_UpdateIndex_DMA, MVI64 src_mem) {
+  return (*(_ecv_f64v1_t *) (src_mem.addr))[0];
+}
+
+DEF_SEM_U128V1_RUN(LDR_Q_UpdateIndex_DMA, MVI128 src_mem) {
+  return *(_ecv_u128v1_t *) (src_mem.addr);
+}
+
+DEF_SEM_U8_RUN(LDR_B_FromOffset_DMA, MVI8 src_mem, ADDR offset) {
+  return (*(_ecv_u8v1_t *) (src_mem.addr + Read(offset)))[0];
+}
+
+// DEF_SEM(LDR_H_FromOffset, VI128 dst, MVI16 src, ADDR offset) {
+//   UWriteVI16(dst, UReadVI16(DisplaceAddress(src, Read(offset))));
+// }
+
+DEF_SEM_F32_RUN(LDR_S_FromOffset_DMA, MVI32 src_mem, ADDR offset) {
+  return (*(_ecv_f32v1_t *) (src_mem.addr + Read(offset)))[0];
+}
+
+DEF_SEM_F64_RUN(LDR_D_FromOffset_DMA, MVI64 src_mem, ADDR offset) {
+  return (*(_ecv_f64v1_t *) (src_mem.addr + Read(offset)))[0];
+}
+
+DEF_SEM_U128V1_RUN(LDR_Q_FromOffset_DMA, MVI128 src_mem, ADDR offset) {
+  return *(_ecv_u128v1_t *) (src_mem.addr + Read(offset));
+}
+
 }  // namespace
 
 DEF_ISEL(LDR_B_LDST_POS) = LDR_B;  // LDR  <Bt>, [<Xn|SP>{, #<pimm>}]
@@ -761,49 +1468,164 @@ DEF_ISEL(LDR_D_LDST_REGOFF) =
 DEF_ISEL(LDR_Q_LDST_REGOFF) =
     LDR_Q_FromOffset;  // LDR  <Qt>, [<Xn|SP>, (<Wm>|<Xm>), <extend> {<amount>}]
 
+/*
+  DMA
+*/
+DEF_ISEL(LDR_B_LDST_POS_DMA) = LDR_B_DMA;  // LDR  <Bt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(LDR_H_LDST_POS_DMA) = LDR_H_DMA;  // LDR  <Ht>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(LDR_S_LDST_POS_DMA) = LDR_S_DMA;  // LDR  <St>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(LDR_D_LDST_POS_DMA) = LDR_D_DMA;  // LDR  <Dt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(LDR_Q_LDST_POS_DMA) = LDR_Q_DMA;  // LDR  <Qt>, [<Xn|SP>{, #<pimm>}]
+
+DEF_ISEL(LDUR_B_LDST_UNSCALED_DMA) = LDR_B_DMA;  // LDUR  <Bt>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(LDUR_H_LDST_UNSCALED_DMA) = LDR_H_DMA;  // LDUR  <Ht>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(LDUR_S_LDST_UNSCALED_DMA) = LDR_S_DMA;  // LDUR  <St>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(LDUR_D_LDST_UNSCALED_DMA) = LDR_D_DMA;  // LDUR  <Dt>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(LDUR_Q_LDST_UNSCALED_DMA) = LDR_Q_DMA;  // LDUR  <Qt>, [<Xn|SP>{, #<simm>}]
+
+DEF_ISEL(LDR_S_LOADLIT_DMA) = LDR_S_DMA;  // LDR  <St>, <label>
+DEF_ISEL(LDR_D_LOADLIT_DMA) = LDR_D_DMA;  // LDR  <Dt>, <label>
+DEF_ISEL(LDR_Q_LOADLIT_DMA) = LDR_Q_DMA;  // LDR  <Qt>, <label>
+
+// DEF_ISEL(LDR_B_LDST_IMMPRE) = LDR_B_UpdateIndex;  // LDR  <Bt>, [<Xn|SP>, #<simm>]!
+// DEF_ISEL(LDR_H_LDST_IMMPRE) = LDR_H_UpdateIndex;  // LDR  <Ht>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(LDR_S_LDST_IMMPRE_DMA) = LDR_S_UpdateIndex_DMA;  // LDR  <St>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(LDR_D_LDST_IMMPRE_DMA) = LDR_D_UpdateIndex_DMA;  // LDR  <Dt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(LDR_Q_LDST_IMMPRE_DMA) = LDR_Q_UpdateIndex_DMA;  // LDR  <Qt>, [<Xn|SP>, #<simm>]!
+
+// DEF_ISEL(LDR_B_LDST_IMMPOST) = LDR_B_UpdateIndex;  // LDR  <Bt>, [<Xn|SP>], #<simm>
+// DEF_ISEL(LDR_H_LDST_IMMPOST) = LDR_H_UpdateIndex;  // LDR  <Ht>, [<Xn|SP>], #<simm>
+DEF_ISEL(LDR_S_LDST_IMMPOST_DMA) = LDR_S_UpdateIndex_DMA;  // LDR  <St>, [<Xn|SP>], #<simm>
+DEF_ISEL(LDR_D_LDST_IMMPOST_DMA) = LDR_D_UpdateIndex_DMA;  // LDR  <Dt>, [<Xn|SP>], #<simm>
+DEF_ISEL(LDR_Q_LDST_IMMPOST_DMA) = LDR_Q_UpdateIndex_DMA;  // LDR  <Qt>, [<Xn|SP>], #<simm>
+
+DEF_ISEL(LDR_B_LDST_REGOFF_DMA) =
+    LDR_B_FromOffset_DMA;  // LDR  <Bt>, [<Xn|SP>, (<Wm>|<Xm>), <extend> {<amount>}]
+DEF_ISEL(LDR_BL_LDST_REGOFF_DMA) =
+    LDR_B_FromOffset_DMA;  // LDR  <Bt>, [<Xn|SP>, (<Wm>|<Xm>), <extend> {<amount>}]
+// DEF_ISEL(LDR_H_LDST_REGOFF) =
+//     LDR_H_FromOffset;  // LDR  <Ht>, [<Xn|SP>, (<Wm>|<Xm>), <extend> {<amount>}]
+DEF_ISEL(LDR_S_LDST_REGOFF_DMA) =
+    LDR_S_FromOffset_DMA;  // LDR  <St>, [<Xn|SP>, (<Wm>|<Xm>), <extend> {<amount>}]
+DEF_ISEL(LDR_D_LDST_REGOFF_DMA) =
+    LDR_D_FromOffset_DMA;  // LDR  <Dt>, [<Xn|SP>, (<Wm>|<Xm>), <extend> {<amount>}]
+DEF_ISEL(LDR_Q_LDST_REGOFF_DMA) =
+    LDR_Q_FromOffset_DMA;  // LDR  <Qt>, [<Xn|SP>, (<Wm>|<Xm>), <extend> {<amount>}]
+
 namespace {
 
-DEF_SEM_F32F32_RUN(LDP_S, MVI64 src) {
-  _ecv_f32v2_t src_vec = FReadMVI32(src);
+DEF_SEM_F32F32_RUN(LDP_S, MVI64 src_mem) {
+  _ecv_f32v2_t src_vec = FReadMVI32(src_mem);
   return {src_vec[0], src_vec[1]};
 }
 
-DEF_SEM_F64F64_RUN(LDP_D, MVI128 src) {
-  _ecv_f64v2_t src_vec = FReadMVI64(src);
+DEF_SEM_F64F64_RUN(LDP_D, MVI128 src_mem) {
+  _ecv_f64v2_t src_vec = FReadMVI64(src_mem);
   return {src_vec[0], src_vec[1]};
 }
 
 #if defined(__x86_64__)
-DEF_SEM_U128V2_RUN(LDP_Q, MVI256 src) {
-  _ecv_u128v2_t src_vec = UReadMVI128(src);
+DEF_SEM_U128V2_RUN(LDP_Q, MVI256 src_mem) {
+  _ecv_u128v2_t src_vec = UReadMVI128(src_mem);
   return src_vec;
 }
 #else
-DEF_SEM_U128V2_RUN(LDP_Q, MVI256 src) {
-  _ecv_u128v2_t src_vec = UReadMVI128(src);
+DEF_SEM_U128V2_RUN(LDP_Q, MVI256 src_mem) {
+  _ecv_u128v2_t src_vec = UReadMVI128(src_mem);
   return {src_vec[0], src_vec[1]};
 }
 #endif
 
-DEF_SEM_F32F32_RUN(LDP_S_UpdateIndex, MVI64 src) {
-  _ecv_f32v2_t src_vec = FReadMVI32(src);
+DEF_SEM_F32F32_RUN(LDP_S_UpdateIndex, MVI64 src_mem) {
+  _ecv_f32v2_t src_vec = FReadMVI32(src_mem);
   return {src_vec[0], src_vec[1]};
 }
 
-DEF_SEM_F64F64_RUN(LDP_D_UpdateIndex, MVI128 src) {
-  _ecv_f64v2_t src_vec = FReadMVI64(src);
+DEF_SEM_F64F64_RUN(LDP_D_UpdateIndex, MVI128 src_mem) {
+  _ecv_f64v2_t src_vec = FReadMVI64(src_mem);
   return {src_vec[0], src_vec[1]};
 }
 
 #if defined(__x86_64__)
-DEF_SEM_U128V2_RUN(LDP_Q_UpdateIndex, MVI256 src) {
-  _ecv_u128v2_t src_vec = UReadMVI128(src);
+DEF_SEM_U128V2_RUN(LDP_Q_UpdateIndex, MVI256 src_mem) {
+  _ecv_u128v2_t src_vec = UReadMVI128(src_mem);
   return src_vec;
 }
 #else
-DEF_SEM_U128V2_RUN(LDP_Q_UpdateIndex, MVI256 src) {
-  _ecv_u128v2_t src_vec = UReadMVI128(src);
+DEF_SEM_U128V2_RUN(LDP_Q_UpdateIndex, MVI256 src_mem) {
+  _ecv_u128v2_t src_vec = UReadMVI128(src_mem);
   return {src_vec[0], src_vec[1]};
+}
+#endif
+
+/*
+  DMA
+*/
+DEF_SEM_F32F32_RUN(LDP_S_DMA, MVI64 src_mem) {
+  _ecv_f32v2_t vec;
+  _Pragma("unroll") for (int i = 0; i < GetVectorElemsNum(vec); i++) {
+    vec[i] = *(float32_t *) (src_mem.addr + i * sizeof(float32_t));
+  }
+  return {vec[0], vec[1]};
+}
+
+DEF_SEM_F64F64_RUN(LDP_D_DMA, MVI128 src_mem) {
+  _ecv_f64v2_t vec;
+  _Pragma("unroll") for (int i = 0; i < GetVectorElemsNum(vec); i++) {
+    vec[i] = *(float64_t *) (src_mem.addr + i * sizeof(float64_t));
+  }
+  return {vec[0], vec[1]};
+}
+
+#if defined(__x86_64__)
+DEF_SEM_U128V2_RUN(LDP_Q_DMA, MVI256 src_mem) {
+  _ecv_u128v2_t vec;
+  _Pragma("unroll") for (int i = 0; i < GetVectorElemsNum(vec); i++) {
+    vec[i] = *(uint128_t *) (src_mem.addr + i * sizeof(uint128_t));
+  }
+  return vec;
+}
+#else
+DEF_SEM_U128V2_RUN(LDP_Q_DMA, MVI256 src_mem) {
+  _ecv_u128v2_t vec;
+  _Pragma("unroll") for (int i = 0; i < GetVectorElemsNum(vec); i++) {
+    vec[i] = *(uint128_t *) (src_mem.addr + i * sizeof(uint128_t));
+  }
+  return {vec[0], vec[1]};
+}
+#endif
+
+DEF_SEM_F32F32_RUN(LDP_S_UpdateIndex_DMA, MVI64 src_mem) {
+  _ecv_f32v2_t vec;
+  _Pragma("unroll") for (int i = 0; i < GetVectorElemsNum(vec); i++) {
+    vec[i] = *(float32_t *) (src_mem.addr + i * sizeof(float32_t));
+  }
+  return {vec[0], vec[1]};
+}
+
+DEF_SEM_F64F64_RUN(LDP_D_UpdateIndex_DMA, MVI128 src_mem) {
+  _ecv_f64v2_t vec;
+  _Pragma("unroll") for (int i = 0; i < GetVectorElemsNum(vec); i++) {
+    vec[i] = *(float64_t *) (src_mem.addr + i * sizeof(float64_t));
+  }
+  return {vec[0], vec[1]};
+}
+
+#if defined(__x86_64__)
+DEF_SEM_U128V2_RUN(LDP_Q_UpdateIndex_DMA, MVI256 src_mem) {
+  _ecv_u128v2_t vec;
+  _Pragma("unroll") for (int i = 0; i < GetVectorElemsNum(vec); i++) {
+    vec[i] = *(uint128_t *) (src_mem.addr + i * sizeof(uint128_t));
+  }
+  return vec;
+}
+#else
+DEF_SEM_U128V2_RUN(LDP_Q_UpdateIndex_DMA, MVI256 src_mem) {
+  _ecv_u128v2_t vec;
+  _Pragma("unroll") for (int i = 0; i < GetVectorElemsNum(vec); i++) {
+    vec[i] = *(uint128_t *) (src_mem.addr + i * sizeof(uint128_t));
+  }
+  return {vec[0], vec[1]};
 }
 #endif
 
@@ -821,50 +1643,114 @@ DEF_ISEL(LDP_S_LDSTPAIR_PRE) = LDP_S_UpdateIndex;  // LDP  <St1>, <St2>, [<Xn|SP
 DEF_ISEL(LDP_D_LDSTPAIR_PRE) = LDP_D_UpdateIndex;  // LDP  <Dt1>, <Dt2>, [<Xn|SP>, #<imm>]!
 DEF_ISEL(LDP_Q_LDSTPAIR_PRE) = LDP_Q_UpdateIndex;  // LDP  <Qt1>, <Qt2>, [<Xn|SP>, #<imm>]!
 
+/*
+  DMA
+*/
+DEF_ISEL(LDP_S_LDSTPAIR_OFF_DMA) = LDP_S_DMA;  // LDP  <St1>, <St2>, [<Xn|SP>{, #<imm>}]
+DEF_ISEL(LDP_D_LDSTPAIR_OFF_DMA) = LDP_D_DMA;  // LDP  <Dt1>, <Dt2>, [<Xn|SP>{, #<imm>}]
+DEF_ISEL(LDP_Q_LDSTPAIR_OFF_DMA) = LDP_Q_DMA;  // LDP  <Qt1>, <Qt2>, [<Xn|SP>{, #<imm>}]
+
+DEF_ISEL(LDP_S_LDSTPAIR_POST_DMA) = LDP_S_UpdateIndex_DMA;  // LDP  <St1>, <St2>, [<Xn|SP>], #<imm>
+DEF_ISEL(LDP_D_LDSTPAIR_POST_DMA) = LDP_D_UpdateIndex_DMA;  // LDP  <Dt1>, <Dt2>, [<Xn|SP>], #<imm>
+DEF_ISEL(LDP_Q_LDSTPAIR_POST_DMA) = LDP_Q_UpdateIndex_DMA;  // LDP  <Qt1>, <Qt2>, [<Xn|SP>], #<imm>
+
+DEF_ISEL(LDP_S_LDSTPAIR_PRE_DMA) = LDP_S_UpdateIndex_DMA;  // LDP  <St1>, <St2>, [<Xn|SP>, #<imm>]!
+DEF_ISEL(LDP_D_LDSTPAIR_PRE_DMA) = LDP_D_UpdateIndex_DMA;  // LDP  <Dt1>, <Dt2>, [<Xn|SP>, #<imm>]!
+DEF_ISEL(LDP_Q_LDSTPAIR_PRE_DMA) = LDP_Q_UpdateIndex_DMA;  // LDP  <Qt1>, <Qt2>, [<Xn|SP>, #<imm>]!
+
 namespace {
 
-DEF_SEM_VOID_RUN(STR_B, R8 src, MVI8 dst) {
-  UWriteMVI8(dst, Read(src));
+DEF_SEM_VOID_RUN(STR_B, R8 src, MVI8 dst_mem) {
+  UWriteMVI8(dst_mem, Read(src));
 }
 
-DEF_SEM_VOID_RUN(STR_H, R16 src, MVI16 dst) {
-  UWriteMVI16(dst, Read(src));
+DEF_SEM_VOID_RUN(STR_H, R16 src, MVI16 dst_mem) {
+  UWriteMVI16(dst_mem, Read(src));
 }
 
-DEF_SEM_VOID_RUN(STR_S, RF32 src, MVI32 dst) {
-  FWriteMVI32(dst, src);
+DEF_SEM_VOID_RUN(STR_S, RF32 src, MVI32 dst_mem) {
+  FWriteMVI32(dst_mem, src);
 }
 
-DEF_SEM_VOID_RUN(STR_D, RF64 src, MVI64 dst) {
-  FWriteMVI64(dst, src);
+DEF_SEM_VOID_RUN(STR_D, RF64 src, MVI64 dst_mem) {
+  FWriteMVI64(dst_mem, src);
 }
 
 #if defined(__x86_64__)
-DEF_SEM_VOID_RUN(STR_Q, VIu64v2 src, MVI128 dst) {
+DEF_SEM_VOID_RUN(STR_Q, VIu64v2 src, MVI128 dst_mem) {
   auto src_v = *reinterpret_cast<VIu128v1 *>(&src);
-  UWriteMVI128(dst, src_v[0]);
+  UWriteMVI128(dst_mem, src_v[0]);
 }
 
-DEF_SEM_VOID_RUN(STR_Q_UpdateIndex, VIu64v2 src, MVI128 dst) {
+DEF_SEM_VOID_RUN(STR_Q_UpdateIndex, VIu64v2 src, MVI128 dst_mem) {
   auto src_v = *reinterpret_cast<VIu128v1 *>(&src);
-  UWriteMVI128(dst, src_v[0]);
+  UWriteMVI128(dst_mem, src_v[0]);
 }
 
-DEF_SEM_VOID_RUN(STR_Q_FromOffset, VIu64v2 src, MVI128 dst, ADDR offset) {
+DEF_SEM_VOID_RUN(STR_Q_FromOffset, VIu64v2 src, MVI128 dst_mem, ADDR offset) {
   auto src_v = *reinterpret_cast<VIu128v1 *>(&src);
-  UWriteMVI128(DisplaceAddress(dst, Read(offset)), src_v[0]);
+  UWriteMVI128(DisplaceAddress(dst_mem, Read(offset)), src_v[0]);
 }
 #else
-DEF_SEM_VOID_RUN(STR_Q, R128 src, MVI128 dst) {
-  UWriteMVI128(dst, Read(src));
+DEF_SEM_VOID_RUN(STR_Q, R128 src, MVI128 dst_mem) {
+  UWriteMVI128(dst_mem, Read(src));
 }
 
-DEF_SEM_VOID_RUN(STR_Q_UpdateIndex, R128 src, MVI128 dst) {
-  UWriteMVI128(dst, Read(src));
+DEF_SEM_VOID_RUN(STR_Q_UpdateIndex, R128 src, MVI128 dst_mem) {
+  UWriteMVI128(dst_mem, Read(src));
 }
 
-DEF_SEM_VOID_RUN(STR_Q_FromOffset, R128 src, MVI128 dst, ADDR offset) {
-  UWriteMVI128(DisplaceAddress(dst, Read(offset)), Read(src));
+DEF_SEM_VOID_RUN(STR_Q_FromOffset, R128 src, MVI128 dst_mem, ADDR offset) {
+  UWriteMVI128(DisplaceAddress(dst_mem, Read(offset)), Read(src));
+}
+
+#endif
+
+/*
+  DMA
+*/
+DEF_SEM_VOID_RUN(STR_B_DMA, R8 src, MVI8 dst_mem) {
+  *(uint8_t *) (dst_mem.addr) = Read(src);
+}
+
+DEF_SEM_VOID_RUN(STR_H_DMA, R16 src, MVI16 dst_mem) {
+  *(uint16_t *) (dst_mem.addr) = Read(src);
+}
+
+DEF_SEM_VOID_RUN(STR_S_DMA, RF32 src, MVI32 dst_mem) {
+  *(float32_t *) (dst_mem.addr) = Read(src);
+}
+
+DEF_SEM_VOID_RUN(STR_D_DMA, RF64 src, MVI64 dst_mem) {
+  *(float64_t *) (dst_mem.addr) = Read(src);
+}
+
+#if defined(__x86_64__)
+DEF_SEM_VOID_RUN(STR_Q_DMA, VIu64v2 src, MVI128 dst_mem) {
+  auto vec = *reinterpret_cast<VIu128v1 *>(&src);
+  *(uint128_t *) (dst_mem.addr) = vec[0];
+}
+
+DEF_SEM_VOID_RUN(STR_Q_UpdateIndex_DMA, VIu64v2 src, MVI128 dst_mem) {
+  auto vec = *reinterpret_cast<VIu128v1 *>(&src);
+  *(uint128_t *) (dst_mem.addr) = vec[0];
+}
+
+DEF_SEM_VOID_RUN(STR_Q_FromOffset_DMA, VIu64v2 src, MVI128 dst, ADDR offset) {
+  auto vec = *reinterpret_cast<VIu128v1 *>(&src);
+  *(uint128_t *) (dst_mem.addr + Read(offset)) = vec[0];
+}
+#else
+DEF_SEM_VOID_RUN(STR_Q_DMA, R128 src, MVI128 dst_mem) {
+  *(uint128_t *) (dst_mem.addr) = Read(src);
+}
+
+DEF_SEM_VOID_RUN(STR_Q_UpdateIndex_DMA, R128 src, MVI128 dst_mem) {
+  *(uint128_t *) (dst_mem.addr) = Read(src);
+}
+
+DEF_SEM_VOID_RUN(STR_Q_FromOffset_DMA, R128 src, MVI128 dst_mem, ADDR offset) {
+  *(uint128_t *) (dst_mem.addr + Read(offset)) = Read(src);
 }
 #endif
 
@@ -888,6 +1774,27 @@ DEF_ISEL(STR_Q_LDST_REGOFF) =
 DEF_ISEL(STR_Q_LDST_IMMPRE) = STR_Q_UpdateIndex;  // STR  <Qt>, [<Xn|SP>, #<simm>]!
 DEF_ISEL(STR_Q_LDST_IMMPOST) = STR_Q_UpdateIndex;  // STR  <Qt>, [<Xn|SP>], #<simm>
 
+/*
+  DMA
+*/
+DEF_ISEL(STR_B_LDST_POS_DMA) = STR_B_DMA;  // STR  <Bt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(STR_H_LDST_POS_DMA) = STR_H_DMA;  // STR  <Ht>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(STR_S_LDST_POS_DMA) = STR_S_DMA;  // STR  <St>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(STR_D_LDST_POS_DMA) = STR_D_DMA;  // STR  <Dt>, [<Xn|SP>{, #<pimm>}]
+DEF_ISEL(STR_Q_LDST_POS_DMA) = STR_Q_DMA;  // STR  <Qt>, [<Xn|SP>{, #<pimm>}]
+
+DEF_ISEL(STUR_B_LDST_UNSCALED_DMA) = STR_B_DMA;  // STUR  <Bt>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(STUR_H_LDST_UNSCALED_DMA) = STR_H_DMA;  // STUR  <Ht>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(STUR_S_LDST_UNSCALED_DMA) = STR_S_DMA;  // STUR  <St>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(STUR_D_LDST_UNSCALED_DMA) = STR_D_DMA;  // STUR  <Dt>, [<Xn|SP>{, #<simm>}]
+DEF_ISEL(STUR_Q_LDST_UNSCALED_DMA) = STR_Q_DMA;  // STUR  <Qt>, [<Xn|SP>{, #<simm>}]
+
+DEF_ISEL(STR_Q_LDST_REGOFF_DMA) =
+    STR_Q_FromOffset_DMA;  // STR  <Qt>, [<Xn|SP>, (<Wm>|<Xm>){, <extend> {<amount>}}]
+
+DEF_ISEL(STR_Q_LDST_IMMPRE_DMA) = STR_Q_UpdateIndex_DMA;  // STR  <Qt>, [<Xn|SP>, #<simm>]!
+DEF_ISEL(STR_Q_LDST_IMMPOST_DMA) = STR_Q_UpdateIndex_DMA;  // STR  <Qt>, [<Xn|SP>], #<simm>
+
 namespace {
 
 template <typename S>
@@ -896,12 +1803,30 @@ DEF_SEM_T_RUN(LoadAcquire, S src) {
   return ReadMem(src);
 }
 
+/*
+  DMA
+*/
+template <typename S>
+DEF_SEM_T_RUN(LoadAcquire_DMA, S src_mem) {
+  __remill_barrier_load_store(runtime_manager);
+  using src_type = BaseType<decltype(src_mem)>::BT;
+  return *(src_type *) (src_mem.addr);
+}
+
 }  // namespace
 
 DEF_ISEL(LDARB_LR32_LDSTEXCL) = LoadAcquire<M8>;  // LDARB  <Wt>, [<Xn|SP>{,#0}]
 DEF_ISEL(LDARH_LR32_LDSTEXCL) = LoadAcquire<M16>;  // LDARH  <Wt>, [<Xn|SP>{,#0}]
 DEF_ISEL(LDAR_LR32_LDSTEXCL) = LoadAcquire<M32>;  // LDAR  <Wt>, [<Xn|SP>{,#0}]
 DEF_ISEL(LDAR_LR64_LDSTEXCL) = LoadAcquire<M64>;  // LDAR  <Xt>, [<Xn|SP>{,#0}]
+
+/*
+  DMA
+*/
+DEF_ISEL(LDARB_LR32_LDSTEXCL_DMA) = LoadAcquire_DMA<M8>;  // LDARB  <Wt>, [<Xn|SP>{,#0}]
+DEF_ISEL(LDARH_LR32_LDSTEXCL_DMA) = LoadAcquire_DMA<M16>;  // LDARH  <Wt>, [<Xn|SP>{,#0}]
+DEF_ISEL(LDAR_LR32_LDSTEXCL_DMA) = LoadAcquire_DMA<M32>;  // LDAR  <Wt>, [<Xn|SP>{,#0}]
+DEF_ISEL(LDAR_LR64_LDSTEXCL_DMA) = LoadAcquire_DMA<M64>;  // LDAR  <Xt>, [<Xn|SP>{,#0}]
 
 namespace {
 

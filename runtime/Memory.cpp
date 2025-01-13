@@ -1,5 +1,6 @@
 #include "Memory.h"
 
+#include <cstdint>
 #include <iomanip>
 #include <iostream>
 #include <utils/Util.h>
@@ -17,26 +18,25 @@
 MappedMemory *MappedMemory::VMAStackEntryInit(int argc, char *argv[],
                                               State &state /* start stack pointer */) {
   _ecv_reg64_t sp;
-  addr_t vma = STACK_START_VMA;
   uint64_t len = STACK_SIZE;
   auto bytes = reinterpret_cast<uint8_t *>(malloc(len));
   memset(bytes, 0, len);
 
   /* Initialize the stack */
-  sp = vma + len;
+  sp = (_ecv_reg64_t) bytes + len;
 
   /* Initialize AT_RANDOM */
   /* FIXME: this shouldn't be on the stack? */
   sp -= 16;
   // getentropy(bytes + (sp - vma), 16);
-  memset(bytes + (sp - vma), 1, 16);
+  memset((uint8_t *) sp, 1, 16);
   _ecv_reg64_t randomp = sp;
 
   /* Initialize AT_PHDR */
   /* FIXME: this shouldn't be on the stack? */
   auto e_ph_size = __g_e_phent * __g_e_phnum;
   sp -= e_ph_size;
-  memcpy(bytes + (sp - vma), __g_e_ph, e_ph_size);
+  memcpy((uint8_t *) sp, __g_e_ph, e_ph_size);
   _ecv_reg64_t phdr = sp;
 
   /* auxv */
@@ -75,7 +75,7 @@ MappedMemory *MappedMemory::VMAStackEntryInit(int argc, char *argv[],
 #endif
   };
   sp -= sizeof(_ecv_auxv64);
-  memcpy(bytes + (sp - vma), _ecv_auxv64, sizeof(_ecv_auxv64));
+  memcpy((uint8_t *) sp, _ecv_auxv64, sizeof(_ecv_auxv64));
 
   /* TODO envp */
   sp -= sizeof(_ecv_reg64_t);
@@ -89,9 +89,9 @@ MappedMemory *MappedMemory::VMAStackEntryInit(int argc, char *argv[],
   /* argc */
   sp -= sizeof(_ecv_reg64_t);
   auto argc64 = (_ecv_reg64_t) argc;
-  memcpy(bytes + (sp - vma), &argc64, sizeof(_ecv_reg64_t));
+  memcpy((uint8_t *) sp, &argc64, sizeof(_ecv_reg64_t));
   SPREG = sp;
-  return new MappedMemory(MemoryAreaType::STACK, "Stack", vma, vma + len, len, bytes, bytes + len,
+  return new MappedMemory(MemoryAreaType::STACK, "Stack", sp, sp + len, len, bytes, bytes + len,
                           true);
 }
 
