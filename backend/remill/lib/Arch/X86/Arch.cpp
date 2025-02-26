@@ -984,6 +984,7 @@ void SetSemaFuncArgType(Instruction &inst, xed_iform_enum_t iform) {
     case XED_IFORM_MOV_GPRv_GPRv_89:
     case XED_IFORM_LEA_GPRv_AGEN: inst.sema_func_arg_type = SemaFuncArgType::Nothing; break;
     case XED_IFORM_MOV_MEMv_GPRv:
+    case XED_IFORM_MOV_MEMb_GPR8:
     case XED_IFORM_MOV_GPRv_MEMv:
     case XED_IFORM_MOVSXD_GPRv_MEMz:
     case XED_IFORM_PUSH_GPRv_50:
