@@ -129,6 +129,8 @@ std::pair<EcvReg, ERC> EcvReg::GetRegInfo(const std::string &_reg_name) {
       return {EcvReg(RegKind::General, 0), ERC::RegB};
     } else if ("RCX" == _reg_name) {
       return {EcvReg(RegKind::General, 1), ERC::RegX};
+    } else if ("ECX" == _reg_name) {
+      return {EcvReg(RegKind::General, 1), ERC::RegW};
     } else if ("RBX" == _reg_name) {
       return {EcvReg(RegKind::General, 3), ERC::RegX};
     } else if ("RSP" == _reg_name) {
@@ -239,6 +241,8 @@ std::string EcvReg::GetWideRegName() const {
   } else if (kArchAMD64 == TARGET_ELF_ARCH) {
     if (0 == number) {
       return "RAX";
+    } else if (1 == number) {
+      return "RCX";
     } else if (2 == number) {
       return "RDX";
     } else if (3 == number) {
@@ -313,6 +317,8 @@ std::string EcvReg::GetRegName(ERC ecv_reg_class) const {
   } else if (kArchAMD64 == TARGET_ELF_ARCH) {
     if (0 == number) {
       return "RAX";
+    } else if (1 == number) {
+      return "RCX";
     } else if (2 == number) {
       return "RDX";
     } else if (3 == number) {
