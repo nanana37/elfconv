@@ -982,6 +982,8 @@ static void FillFusedCallPopRegOperands(Instruction &inst, unsigned address_size
 
 void SetSemaFuncArgType(Instruction &inst, xed_iform_enum_t iform) {
   switch (iform) {
+    case XED_IFORM_CDQ:
+    case XED_IFORM_CDQE:
     case XED_IFORM_JMP_RELBRd:
     case XED_IFORM_NOP_MEMv_GPRv_0F1F:
     case XED_IFORM_MOV_GPRv_IMMz:
@@ -1142,7 +1144,7 @@ bool X86Arch::ArchDecodeInstruction(uint64_t address, std::string_view inst_byte
   }
 
   // Push implicit operands.
-  if (iform == XED_IFORM_CALL_NEAR_RELBRd || iform == XED_IFORM_RET_NEAR) {
+  if (XED_IFORM_CALL_NEAR_RELBRd == iform || XED_IFORM_RET_NEAR == iform) {
     // Push Write PC
     Operand rip_op = {};
     rip_op.type = Operand::kTypeRegister;
@@ -1168,7 +1170,7 @@ bool X86Arch::ArchDecodeInstruction(uint64_t address, std::string_view inst_byte
     inst.operands.push_back(wsp_op);
   }
 
-  if (iform == XED_IFORM_PUSH_GPRv_50 || iform == XED_IFORM_POP_GPRv_58) {
+  if (XED_IFORM_PUSH_GPRv_50 == iform || XED_IFORM_POP_GPRv_58== iform) {
     // Push Read SP
     Operand rsp_op = {};
     rsp_op.type = Operand::kTypeRegister;
@@ -1184,6 +1186,46 @@ bool X86Arch::ArchDecodeInstruction(uint64_t address, std::string_view inst_byte
     wsp_op.reg = RegOp(XED_REG_RSP);
     wsp_op.size = wsp_op.reg.size;
     inst.operands.push_back(wsp_op);
+  }
+  
+  if (XED_IFORM_CDQ == iform) {
+    // Push Read EAX
+    Operand eax_op = {};
+    eax_op.type = Operand::kTypeRegister;
+    eax_op.action = Operand::kActionRead;
+    eax_op.reg = RegOp(XED_REG_EAX);
+    eax_op.size = eax_op.reg.size;
+    inst.operands.push_back(eax_op);
+
+    // Push Write XDX (RDX/EDX)
+    Operand xdx_op = {};
+    xdx_op.type = Operand::kTypeRegister;
+    xdx_op.action = Operand::kActionWrite;
+    #if 64 == ADDRESS_SIZE_BITS
+    xdx_op.reg = RegOp(XED_REG_RDX);
+    #else
+    xdx_op.reg = RegOp(XED_REG_EDX);
+    #endif
+    xdx_op.size = xdx_op.reg.size;
+    inst.operands.push_back(xdx_op);
+  }
+
+  if (XED_IFORM_CDQE == iform) {
+    // Push Read EAX
+    Operand eax_op = {};
+    eax_op.type = Operand::kTypeRegister;
+    eax_op.action = Operand::kActionRead;
+    eax_op.reg = RegOp(XED_REG_EAX);
+    eax_op.size = eax_op.reg.size;
+    inst.operands.push_back(eax_op);
+
+    // Push Write RAX
+    Operand rax_op = {};
+    rax_op.type = Operand::kTypeRegister;
+    rax_op.action = Operand::kActionWrite;
+    rax_op.reg = RegOp(XED_REG_RAX);
+    rax_op.size = rax_op.reg.size;
+    inst.operands.push_back(rax_op);
   }
 
   SetSemaFuncArgType(inst, iform);
