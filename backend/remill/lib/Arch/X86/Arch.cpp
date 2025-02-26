@@ -422,6 +422,13 @@ static void DecodeMemory(Instruction &inst, const xed_decoded_inst_t *xedd,
   auto size = xed_decoded_inst_get_operand_width(xedd);
   if (XED_IFORM_MOV_MEMw_SEG == iform) {
     size = 16;
+  } else if (XED_IFORM_MOV_GPR8_MEMb == iform) {
+
+    // NOTE: XED doesn't name the function with the operand size for these
+    // instructions, so we need to do it here.
+
+    inst.function += "_";
+    inst.function += std::to_string(size);
   }
 
   auto raw_segment_reg = xed_decoded_inst_get_seg_reg(xedd, mem_index);
@@ -986,6 +993,7 @@ void SetSemaFuncArgType(Instruction &inst, xed_iform_enum_t iform) {
     case XED_IFORM_MOV_MEMv_GPRv:
     case XED_IFORM_MOV_MEMb_GPR8:
     case XED_IFORM_MOV_GPRv_MEMv:
+    case XED_IFORM_MOV_GPR8_MEMb:
     case XED_IFORM_MOVSXD_GPRv_MEMz:
     case XED_IFORM_PUSH_GPRv_50:
     case XED_IFORM_POP_GPRv_58:
