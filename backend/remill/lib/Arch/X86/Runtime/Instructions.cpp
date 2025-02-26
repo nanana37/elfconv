@@ -226,7 +226,7 @@ DEF_HELPER(SquareRoot32, float32_t src_float)->float32_t {
 // #include "lib/Arch/X86/Semantics/ROTATE.cpp"
 // #include "lib/Arch/X86/Semantics/RTM.cpp"
 // #include "lib/Arch/X86/Semantics/SEMAPHORE.cpp"
-// #include "lib/Arch/X86/Semantics/SHIFT.cpp"
+#include "lib/Arch/X86/Semantics/SHIFT.cpp"
 // #include "lib/Arch/X86/Semantics/SSE.cpp"
 // #include "lib/Arch/X86/Semantics/STRINGOP.cpp"
 #include "lib/Arch/X86/Semantics/SYSCALL.cpp"
