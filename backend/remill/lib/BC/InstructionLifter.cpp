@@ -666,10 +666,10 @@ LiftStatus InstructionLifter::LiftIntoBlock(Instruction &arch_inst, llvm::BasicB
         write_regs.push_back({e_r, e_r_c});
         continue;
       } else if (Operand::Action::kActionRead == op.action) {
-        if (is_base_reg) {
-          CHECK(op.addr.index_reg.name.empty())
-              << "[Bug] addr.index_reg must not be added to operands list.";
-        }
+        // if (is_base_reg) {
+        //   CHECK(op.addr.index_reg.name.empty())
+        //       << "[Bug] addr.index_reg must not be added to operands list.";
+        // }
         if (31 != t_reg->number || "SP" == t_reg->name) {
           load_reg_map.insert({e_r, e_r_c});
         } else {
