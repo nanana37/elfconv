@@ -422,11 +422,9 @@ static void DecodeMemory(Instruction &inst, const xed_decoded_inst_t *xedd,
   auto size = xed_decoded_inst_get_operand_width(xedd);
   if (XED_IFORM_MOV_MEMw_SEG == iform) {
     size = 16;
-  } else if (XED_IFORM_MOV_GPR8_MEMb == iform) {
-
-    // NOTE: XED doesn't name the function with the operand size for these
-    // instructions, so we need to do it here.
-
+  }
+  // NOTE: These instructions are not "scalable" for XED, so we need to name manually.
+  if (XED_IFORM_MOV_GPR8_MEMb == iform || XED_IFORM_MOV_MEMb_IMMb == iform) {
     inst.function += "_";
     inst.function += std::to_string(size);
   }
@@ -990,6 +988,8 @@ void SetSemaFuncArgType(Instruction &inst, xed_iform_enum_t iform) {
     case XED_IFORM_JMP_RELBRb:
     case XED_IFORM_MOV_GPRv_GPRv_89:
     case XED_IFORM_LEA_GPRv_AGEN: inst.sema_func_arg_type = SemaFuncArgType::Nothing; break;
+    case XED_IFORM_MOV_MEMb_IMMb:
+    case XED_IFORM_MOV_MEMv_IMMz:
     case XED_IFORM_MOV_MEMv_GPRv:
     case XED_IFORM_MOV_MEMb_GPR8:
     case XED_IFORM_MOV_GPRv_MEMv:
@@ -999,7 +999,7 @@ void SetSemaFuncArgType(Instruction &inst, xed_iform_enum_t iform) {
     case XED_IFORM_POP_GPRv_58:
     case XED_IFORM_RET_NEAR:
     case XED_IFORM_CALL_NEAR_RELBRd:
-    case XED_IFORM_MOV_MEMv_IMMz: inst.sema_func_arg_type = SemaFuncArgType::Runtime; break;
+    inst.sema_func_arg_type = SemaFuncArgType::Runtime; break;
     case XED_IFORM_CMP_MEMv_IMMz:
     case XED_IFORM_CMP_MEMv_IMMb:
     case XED_IFORM_ADD_GPRv_MEMv:
