@@ -176,7 +176,7 @@ DEF_SEM_T_STATE(SUB_RI_RI, S1 src1, S2 src2) {
 // DEF_ISEL(SUB_MEMb_IMMb_80r5) = SUB<M8W, M8, I8>;
 // DEF_ISEL(SUB_GPR8_IMMb_80r5) = SUB<R8W, R8, I8>;
 // DEF_ISEL_MnW_Mn_In(SUB_MEMv_IMMz, SUB);
-// DEF_ISEL_RnW_Rn_In(SUB_GPRv_IMMz, SUB);
+DEF_ISEL_RnW_Rn_In(SUB_GPRv_IMMz, SUB_RI_RI);
 // DEF_ISEL(SUB_MEMb_IMMb_82r5) = SUB<M8W, M8, I8>;
 // DEF_ISEL(SUB_GPR8_IMMb_82r5) = SUB<R8W, R8, I8>;
 // DEF_ISEL_MnW_Mn_In(SUB_MEMv_IMMb, SUB);
@@ -219,8 +219,16 @@ DEF_ISEL_RnW_Rn_In(SUB_GPRv_IMMb, SUB_RI_RI);
 namespace {
 
 template <typename S1, typename S2>
-DEF_SEM_VOID_STATE(CMP, S1 src1, S2 src2) {
+DEF_SEM_VOID_STATE(CMP_RI_RI, S1 src1, S2 src2) {
   auto lhs = Read(src1);
+  auto rhs = Read(src2);
+  auto sum = USub(lhs, rhs);
+  WriteFlagsAddSub<tag_sub>(state, lhs, rhs, sum);
+}
+
+template <typename S1, typename S2>
+DEF_SEM_VOID_STATE_RUN(CMP_M_RI, S1 src1, S2 src2) {
+  auto lhs = ReadMem(src1);
   auto rhs = Read(src2);
   auto sum = USub(lhs, rhs);
   WriteFlagsAddSub<tag_sub>(state, lhs, rhs, sum);
@@ -230,12 +238,12 @@ DEF_SEM_VOID_STATE(CMP, S1 src1, S2 src2) {
 
 // DEF_ISEL(CMP_MEMb_IMMb_80r7) = CMP<M8, I8>;
 // DEF_ISEL(CMP_GPR8_IMMb_80r7) = CMP<R8, I8>;
-// DEF_ISEL_Mn_In(CMP_MEMv_IMMz, CMP);
+DEF_ISEL_Mn_In(CMP_MEMv_IMMz, CMP_M_RI);
 // DEF_ISEL_Rn_In(CMP_GPRv_IMMz, CMP);
 // DEF_ISEL(CMP_MEMb_IMMb_82r7) = CMP<M8, I8>;
 // DEF_ISEL(CMP_GPR8_IMMb_82r7) = CMP<R8, I8>;
 // DEF_ISEL_Mn_In(CMP_MEMv_IMMb, CMP);
-DEF_ISEL_Rn_In(CMP_GPRv_IMMb, CMP);
+DEF_ISEL_Rn_In(CMP_GPRv_IMMb, CMP_RI_RI);
 // DEF_ISEL(CMP_MEMb_GPR8) = CMP<M8, I8>;
 // DEF_ISEL(CMP_GPR8_GPR8_38) = CMP<R8, R8>;
 // DEF_ISEL_Mn_In(CMP_MEMv_GPRv, CMP);
