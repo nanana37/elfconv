@@ -123,6 +123,8 @@ std::pair<EcvReg, ERC> EcvReg::GetRegInfo(const std::string &_reg_name) {
   } else if (kArchAMD64 == TARGET_ELF_ARCH) {
     if ("RAX" == _reg_name) {
       return {EcvReg(RegKind::General, 0), ERC::RegX};
+    } else if ("EAX" == _reg_name) {
+      return {EcvReg(RegKind::General, 0), ERC::RegW};
     } else if ("RBX" == _reg_name) {
       return {EcvReg(RegKind::General, 3), ERC::RegX};
     } else if ("RSP" == _reg_name) {
