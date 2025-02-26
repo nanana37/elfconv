@@ -127,16 +127,22 @@ std::pair<EcvReg, ERC> EcvReg::GetRegInfo(const std::string &_reg_name) {
       return {EcvReg(RegKind::General, 0), ERC::RegW};
     } else if ("AL" == _reg_name) {
       return {EcvReg(RegKind::General, 0), ERC::RegB};
+    } else if ("RCX" == _reg_name) {
+      return {EcvReg(RegKind::General, 1), ERC::RegX};
     } else if ("RBX" == _reg_name) {
       return {EcvReg(RegKind::General, 3), ERC::RegX};
     } else if ("RSP" == _reg_name) {
       return {EcvReg(RegKind::General, 4), ERC::RegX};
     } else if ("RBP" == _reg_name) {
       return {EcvReg(RegKind::General, 5), ERC::RegX};
-    } else if ("RDI" == _reg_name) {
-      return {EcvReg(RegKind::General, 7), ERC::RegX};
     } else if ("RSI" == _reg_name) {
       return {EcvReg(RegKind::General, 6), ERC::RegX};
+    } else if ("RDI" == _reg_name) {
+      return {EcvReg(RegKind::General, 7), ERC::RegX};
+    } else if ("EDI" == _reg_name) {
+      return {EcvReg(RegKind::General, 7), ERC::RegW};
+    } else if ("R8" == _reg_name) {
+      return {EcvReg(RegKind::General, 8), ERC::RegX};
     } else if ("RIP" == _reg_name) {
       return {EcvReg(RegKind::Special, RIP_ORDER), ERC::RegX};
     } else if ("RDX" == _reg_name) {
