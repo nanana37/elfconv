@@ -1087,11 +1087,10 @@ DEF_ISEL_RnW_Mn(MOV_GPRv_MEMv, MOV_RI_M);
 //   return memory;
 // }
 
-// template <typename D, typename S, typename SextT>
-// DEF_SEM(MOVSX, D dst, S src) {
-//   WriteZExt(dst, SExtTo<SextT>(Read(src)));
-//   return memory;
-// }
+template <typename S, typename SextT>
+DEF_SEM_T_RUN(MOVSX_RI_M, S src) {
+  return SExtTo<SextT>(ReadMem(src));
+}
 
 // }  // namespace
 
@@ -1124,7 +1123,7 @@ DEF_ISEL_RnW_Mn(MOV_GPRv_MEMv, MOV_RI_M);
 // IF_64BIT(DEF_ISEL(MOVSXD_GPRv_GPR32_32) = MOVSX<R64W, R32, int64_t>;)
 
 // IF_64BIT(DEF_ISEL(MOVSXD_GPRv_MEMd_64) = MOVSX<R64W, M32, int64_t>;)
-// IF_64BIT(DEF_ISEL(MOVSXD_GPRv_MEMz_64) = MOVSX<R64W, M32, int64_t>;)
+IF_64BIT(DEF_ISEL(MOVSXD_GPRv_MEMz_64) = MOVSX_RI_M<M32, int64_t>;)
 // IF_64BIT(DEF_ISEL(MOVSXD_GPRv_GPR32_64) = MOVSX<R64W, R32, int64_t>;)
 // IF_64BIT(DEF_ISEL(MOVSXD_GPRv_GPRz_64) = MOVSX<R64W, R32, int64_t>;)
 
