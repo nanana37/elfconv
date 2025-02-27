@@ -200,7 +200,7 @@ test_jnz_relbrd:
     mov rax, 15
     cmp rax, 15
     jne fail_jnz_relbrd
-    jmp success
+    jmp test_movsxd_gprv_memz
 
 .section .data
 jnz_relbrd_error_msg:
@@ -211,6 +211,28 @@ fail_jnz_relbrd:
     mov rax, 1
     mov rdi, 1
     lea rsi, [rip + jnz_relbrd_error_msg]
+    mov rdx, 25
+    syscall
+    jmp exit
+
+.section .data
+movsxd_gprv_memz_error_msg:
+    .string "[ERROR] MOVSXD_GPRv_MEMz\n"
+.section .text
+
+test_movsxd_gprv_memz:
+    mov rbp, rsp
+    sub rsp, 8
+    mov dword ptr [rbp - 4], 5
+    movsxd rax, dword ptr [rbp - 4]
+    cmp rax, 5
+    jne fail_movsxd_gprv_memz
+    jmp success
+
+fail_movsxd_gprv_memz:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + movsxd_gprv_memz_error_msg]
     mov rdx, 25
     syscall
     jmp exit
