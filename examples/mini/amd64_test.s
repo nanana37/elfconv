@@ -160,7 +160,7 @@ test_sub_gprv_immz:
     sub rax, 10
     cmp rax, 10
     jne fail_sub_gprv_immz
-    jmp success
+    jmp test_cmp_memv_immb
 
 .section .data
 sub_gprv_immz_error_msg:
@@ -171,6 +171,46 @@ fail_sub_gprv_immz:
     mov rax, 1
     mov rdi, 1
     lea rsi, [rip + sub_gprv_immz_error_msg]
+    mov rdx, 25
+    syscall
+    jmp exit
+
+test_cmp_memv_immb:
+    mov rbp, rsp
+    sub rsp, 8
+    mov dword ptr [rbp - 4], 0
+    cmp dword ptr [rbp - 4], 0
+    jne fail_cmp_memv_immb
+    jmp test_jnz_relbrd
+
+.section .data
+cmp_memv_immb_error_msg:
+    .string "[ERROR] CMP_MEMv_IMMb\n"
+.section .text
+
+fail_cmp_memv_immb:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + cmp_memv_immb_error_msg]
+    mov rdx, 25
+    syscall
+    jmp exit
+
+test_jnz_relbrd:
+    mov rax, 15
+    cmp rax, 15
+    jne fail_jnz_relbrd
+    jmp success
+
+.section .data
+jnz_relbrd_error_msg:
+    .string "[ERROR] JNZ_RELBRd\n"
+.section .text
+
+fail_jnz_relbrd:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + jnz_relbrd_error_msg]
     mov rdx, 25
     syscall
     jmp exit
