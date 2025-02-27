@@ -227,12 +227,34 @@ test_movsxd_gprv_memz:
     movsxd rax, dword ptr [rbp - 4]
     cmp rax, 5
     jne fail_movsxd_gprv_memz
-    jmp success
+    jmp test_shl_gprv_immb_c1r4
 
 fail_movsxd_gprv_memz:
     mov rax, 1
     mov rdi, 1
     lea rsi, [rip + movsxd_gprv_memz_error_msg]
+    mov rdx, 25
+    syscall
+    jmp exit
+
+test_shl_gprv_immb_c1r4:
+    mov rbp, rsp
+    sub rsp, 8
+    mov rax, 0x1
+    .byte 0x48, 0xC1, 0xE0, 0x02  # shl rax, 2 (C1 /4)
+    cmp rax, 4
+    jne fail_shl_gprv_immb_c1r4
+    jmp success
+
+.section .data
+shl_gprv_immb_c1r4_error_msg:
+    .string "[ERROR] SHL_GPRv_IMMb_C1r4\n"
+.section .text
+
+fail_shl_gprv_immb_c1r4:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + shl_gprv_immb_c1r4_error_msg]
     mov rdx, 25
     syscall
     jmp exit
