@@ -131,6 +131,10 @@ std::pair<EcvReg, ERC> EcvReg::GetRegInfo(const std::string &_reg_name) {
       return {EcvReg(RegKind::General, 1), ERC::RegX};
     } else if ("ECX" == _reg_name) {
       return {EcvReg(RegKind::General, 1), ERC::RegW};
+    } else if ("CL" == _reg_name) {
+      return {EcvReg(RegKind::General, 1), ERC::RegB};
+    } else if ("RDX" == _reg_name) {
+      return {EcvReg(RegKind::General, 2), ERC::RegX};
     } else if ("EDX" == _reg_name) {
       return {EcvReg(RegKind::General, 2), ERC::RegW};
     } else if ("RBX" == _reg_name) {
@@ -149,8 +153,6 @@ std::pair<EcvReg, ERC> EcvReg::GetRegInfo(const std::string &_reg_name) {
       return {EcvReg(RegKind::General, 8), ERC::RegX};
     } else if ("RIP" == _reg_name) {
       return {EcvReg(RegKind::Special, RIP_ORDER), ERC::RegX};
-    } else if ("RDX" == _reg_name) {
-      return {EcvReg(RegKind::General, 2), ERC::RegX};
     } else if ("BRANCH_TAKEN" == _reg_name) {
       return {EcvReg(RegKind::Special, BRANCH_TAKEN_ORDER), ERC::RegX};
     } else if ("STATE" == _reg_name) {
