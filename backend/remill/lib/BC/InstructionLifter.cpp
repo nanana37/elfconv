@@ -261,6 +261,8 @@ std::string EcvReg::GetWideRegName() const {
       return "RSI";
     } else if (7 == number) {
       return "RDI";
+    } else if (8 == number) {
+      return "R8";
     } else if (SP_ORDER == number) {
       return "RSP";
     } else if (RIP_ORDER == number) {
@@ -322,13 +324,34 @@ std::string EcvReg::GetRegName(ERC ecv_reg_class) const {
     LOG(FATAL) << "[Bug]: Reach the unreachable code at EcvReg::GetRegName.";
   } else if (kArchAMD64 == TARGET_ELF_ARCH) {
     if (0 == number) {
-      return "RAX";
+      switch (ecv_reg_class) {
+        case ERC::RegW: return "EAX"; break;
+        case ERC::RegX: return "RAX"; break;
+        case ERC::RegB: return "AL"; break;
+        case ERC::RegH: return "AX"; break;
+        default: LOG(FATAL) << "Unsupported x86-64 register. number: " << number;
+      }
     } else if (1 == number) {
-      return "RCX";
+      switch (ecv_reg_class) {
+        case ERC::RegW: return "ECX"; break;
+        case ERC::RegX: return "RCX"; break;
+        case ERC::RegB: return "CL"; break;
+        case ERC::RegH: return "CX"; break;
+        default: LOG(FATAL) << "Unsupported x86-64 register. number: " << number;
+      }
     } else if (2 == number) {
-      return "RDX";
+      switch (ecv_reg_class) {
+        case ERC::RegW: return "EDX"; break;
+        case ERC::RegX: return "RDX"; break;
+        case ERC::RegB: return "DL"; break;
+        case ERC::RegH: return "DX"; break;
+        default: LOG(FATAL) << "Unsupported x86-64 register. number: " << number;
+      }
     } else if (3 == number) {
-      return "RBX";
+      switch (ecv_reg_class) {
+        case ERC::RegX: return "RBX"; break;
+        default: LOG(FATAL) << "Unsupported x86-64 register. number: " << number;
+      }
     } else if (4 == number) {
       return "RSP";
     } else if (5 == number) {
@@ -337,6 +360,8 @@ std::string EcvReg::GetRegName(ERC ecv_reg_class) const {
       return "RSI";
     } else if (7 == number) {
       return "RDI";
+    } else if (8 == number) {
+      return "R8";
     } else if (SP_ORDER == number) {
       return "RSP";
     } else if (RIP_ORDER == number) {
