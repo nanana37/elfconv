@@ -1005,6 +1005,8 @@ void SetSemaFuncArgType(Instruction &inst, xed_iform_enum_t iform) {
     case XED_IFORM_CMP_MEMv_IMMz:
     case XED_IFORM_CMP_MEMv_IMMb:
     case XED_IFORM_ADD_GPRv_MEMv:
+    case XED_IFORM_IDIV_MEMv:
+    case XED_IFORM_IDIV_GPRv:
     case XED_IFORM_SHL_GPRv_IMMb_C1r4:
     case XED_IFORM_SYSCALL: inst.sema_func_arg_type = SemaFuncArgType::StateRuntime; break;
     case XED_IFORM_CMP_GPRv_IMMb:
@@ -1227,6 +1229,40 @@ bool X86Arch::ArchDecodeInstruction(uint64_t address, std::string_view inst_byte
     rax_op.reg = RegOp(XED_REG_RAX);
     rax_op.size = rax_op.reg.size;
     inst.operands.push_back(rax_op);
+  }
+
+  if (XED_IFORM_IDIV_MEMv == iform || XED_IFORM_IDIV_GPRv == iform) {
+    // Push Read EAX
+    Operand eax_op = {};
+    eax_op.type = Operand::kTypeRegister;
+    eax_op.action = Operand::kActionRead;
+    eax_op.reg = RegOp(XED_REG_EAX);
+    eax_op.size = eax_op.reg.size;
+    inst.operands.push_back(eax_op);
+
+    // Push Read EDX
+    Operand edx_op = {};
+    edx_op.type = Operand::kTypeRegister;
+    edx_op.action = Operand::kActionRead;
+    edx_op.reg = RegOp(XED_REG_EDX);
+    edx_op.size = edx_op.reg.size;
+    inst.operands.push_back(edx_op);
+
+    // Push Write RAX
+    Operand wrax_op = {};
+    wrax_op.type = Operand::kTypeRegister;
+    wrax_op.action = Operand::kActionWrite;
+    wrax_op.reg = RegOp(XED_REG_RAX);
+    wrax_op.size = wrax_op.reg.size;
+    inst.operands.push_back(wrax_op);
+
+    // Push Write RDX
+    Operand wrdx_op = {};
+    wrdx_op.type = Operand::kTypeRegister;
+    wrdx_op.action = Operand::kActionWrite;
+    wrdx_op.reg = RegOp(XED_REG_RDX);
+    wrdx_op.size = wrdx_op.reg.size;
+    inst.operands.push_back(wrdx_op);
   }
 
   SetSemaFuncArgType(inst, iform);

@@ -131,6 +131,8 @@ std::pair<EcvReg, ERC> EcvReg::GetRegInfo(const std::string &_reg_name) {
       return {EcvReg(RegKind::General, 1), ERC::RegX};
     } else if ("ECX" == _reg_name) {
       return {EcvReg(RegKind::General, 1), ERC::RegW};
+    } else if ("EDX" == _reg_name) {
+      return {EcvReg(RegKind::General, 2), ERC::RegW};
     } else if ("RBX" == _reg_name) {
       return {EcvReg(RegKind::General, 3), ERC::RegX};
     } else if ("RSP" == _reg_name) {

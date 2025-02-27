@@ -441,7 +441,7 @@ DEF_ISEL_Rn_In(CMP_GPRv_IMMb, CMP_RI_RI);
 // IF_AVX(DEF_ISEL(VMULSD_XMMdq_XMMdq_MEMq) = MULSD<VV128W, VV128, MV128>;)
 // IF_AVX(DEF_ISEL(VMULSD_XMMdq_XMMdq_XMMq) = MULSD<VV128W, VV128, VV128>;)
 
-// namespace {
+namespace {
 
 // // TODO(pag): Is the checking of `res` against `res_trunc` worth it? It
 // //            introduces extra control flow.
@@ -506,25 +506,80 @@ DEF_ISEL_Rn_In(CMP_GPRv_IMMb, CMP_RI_RI);
 //       } \
 //     } \
 //   }
-
-//             MAKE_IDIVxax(ax, REG_AL, REG_AH, REG_AL, REG_AH)
-//                 MAKE_IDIVxax(dxax, REG_AX, REG_DX, REG_AX, REG_DX)
-//                     MAKE_IDIVxax(edxeax, REG_EAX, REG_EDX, REG_XAX, REG_XDX)
-//                         IF_64BIT(MAKE_IDIVxax(rdxrax, REG_RAX, REG_RDX, REG_RAX, REG_RDX))
-
+// 
+// MAKE_IDIVxax(ax, REG_AL, REG_AH, REG_AL, REG_AH)
+// MAKE_IDIVxax(dxax, REG_AX, REG_DX, REG_AX, REG_DX)
+// MAKE_IDIVxax(edxeax, REG_EAX, REG_EDX, REG_XAX, REG_XDX)
+// IF_64BIT(MAKE_IDIVxax(rdxrax, REG_RAX, REG_RDX, REG_RAX, REG_RDX))
+// 
 // #undef MAKE_IDIVxax
 
-// }  // namespace
+template <typename S1, typename S2, typename S3>
+DEF_SEM_U64U64_STATE_RUN(IDIVedxeax_M, S3 src3, S1 src1, S2 src2, PC next_pc) {
+  auto lhs_low = ZExt(Read(src1));
+  auto lhs_high = ZExt(Read(src2));
+  auto rhs = SExt(ReadMem(src3));
+  auto shift = ZExt(BitSizeOf(src3));
+  auto lhs = Signed(UOr(UShl(lhs_high, shift), lhs_low));
+  if (IsZero(rhs)) {
+    __remill_error(state, 0xdeadbeaf, runtime_manager);
+    return {0xdeadbeaf, 0xdeadbeaf};
+  } else {
+    auto quot = SDiv(lhs, rhs);
+    auto rem = SRem(lhs, rhs);
+    auto quot_trunc = Trunc(quot);
+    auto rem_trunc = Trunc(rem);
+    if (quot != SExt(quot_trunc)) {
+      __remill_error(state, 0xdeadbeaf, runtime_manager);
+      return {0xdeadbeaf, 0xdeadbeaf};
+    } else {
+      auto quot_val = Unsigned(quot_trunc);
+      auto rem_val = Unsigned(rem_trunc);
+      ClearArithFlags();
+      return {quot_val, rem_val};
+    }
+  }
+}
+
+template <typename S1, typename S2, typename S3>
+DEF_SEM_U64U64_STATE_RUN(IDIVedxeax_R, S3 src3, S1 src1, S2 src2, PC next_pc) {
+  auto lhs_low = ZExt(Read(src1));
+  auto lhs_high = ZExt(Read(src2));
+  auto rhs = SExt(Read(src3));
+  auto shift = ZExt(BitSizeOf(src3));
+  auto lhs = Signed(UOr(UShl(lhs_high, shift), lhs_low));
+  if (IsZero(rhs)) {
+    __remill_error(state, 0xdeadbeaf, runtime_manager);
+    return {0xdeadbeaf, 0xdeadbeaf};
+  } else {
+    auto quot = SDiv(lhs, rhs);
+    auto rem = SRem(lhs, rhs);
+    auto quot_trunc = Trunc(quot);
+    auto rem_trunc = Trunc(rem);
+    if (quot != SExt(quot_trunc)) {
+      __remill_error(state, 0xdeadbeaf, runtime_manager);
+      return {0xdeadbeaf, 0xdeadbeaf};
+    } else {
+      auto quot_val = Unsigned(quot_trunc);
+      auto rem_val = Unsigned(rem_trunc);
+      ClearArithFlags();
+      return {quot_val, rem_val};
+    }
+  }
+}
+
+}  // namespace
 
 // DEF_ISEL(IDIV_MEMb) = IDIVax<M8>;
 // DEF_ISEL(IDIV_GPR8) = IDIVax<R8>;
 // DEF_ISEL(IDIV_MEMv_8) = IDIVax<M8>;
 // DEF_ISEL(IDIV_MEMv_16) = IDIVdxax<M16>;
-// DEF_ISEL(IDIV_MEMv_32) = IDIVedxeax<M32>;
+DEF_ISEL(IDIV_MEMv_32) = IDIVedxeax_M<R32, R32, M32>;
 // IF_64BIT(DEF_ISEL(IDIV_MEMv_64) = IDIVrdxrax<M64>;)
 // DEF_ISEL(IDIV_GPRv_8) = IDIVax<R8>;
 // DEF_ISEL(IDIV_GPRv_16) = IDIVdxax<R16>;
 // DEF_ISEL(IDIV_GPRv_32) = IDIVedxeax<R32>;
+DEF_ISEL(IDIV_GPRv_32) = IDIVedxeax_R<R32, R32, R32>;
 // IF_64BIT(DEF_ISEL(IDIV_GPRv_64) = IDIVrdxrax<R64>;)
 
 // DEF_ISEL(DIV_MEMb) = DIVax<M8>;
