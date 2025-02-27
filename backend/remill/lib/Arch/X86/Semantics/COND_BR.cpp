@@ -76,7 +76,7 @@ DEF_SEM_U64_STATE(JNZ, PC taken, PC not_taken) {
 // }
 
 DEF_SEM_U64_STATE(JNL, PC taken, PC not_taken) {
-  auto taken_branch = __remill_compare_sge(BXor(FLAG_SF, FLAG_OF));
+  auto taken_branch = __remill_compare_uge(BXnor(FLAG_SF, FLAG_OF));
   return taken_branch;
 }
 
@@ -144,8 +144,8 @@ DEF_SEM_U64_STATE(JNL, PC taken, PC not_taken) {
 // }
 
 DEF_SEM_U64_STATE(JLE, PC taken, PC not_taken) {
-  auto taken_branch = __remill_compare_sle(BOr(FLAG_ZF, BXor(FLAG_SF, FLAG_OF)));
-  return taken_branch;
+  auto take_branch = __remill_compare_sle(BOr(FLAG_ZF, BXor(FLAG_SF, FLAG_OF)));
+  return take_branch;
 }
 
 }  // namespace
@@ -199,7 +199,7 @@ DEF_ISEL(JNZ_RELBRd) = JNZ;
 // IF_64BIT(DEF_ISEL(JNO_RELBRz_64) = JNO;)
 // DEF_ISEL(JNO_RELBRd) = JNO;
 
-// DEF_ISEL(JNL_RELBRb) = JNL;
+DEF_ISEL(JNL_RELBRb) = JNL;
 // DEF_ISEL(JNL_RELBRz_8) = JNL;
 // DEF_ISEL(JNL_RELBRz_16) = JNL;
 // DEF_ISEL(JNL_RELBRz_32) = JNL;
