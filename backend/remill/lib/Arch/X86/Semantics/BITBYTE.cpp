@@ -29,7 +29,7 @@ namespace {
 // }
 
 DEF_SEM_T_STATE(SETL_RI) {
-  return BXor(FLAG_SF, FLAG_OF);
+  return static_cast<uint8_t>(BXor(FLAG_SF, FLAG_OF));
 }
 
 // template <typename D>
