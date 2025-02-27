@@ -1151,122 +1151,47 @@ bool X86Arch::ArchDecodeInstruction(uint64_t address, std::string_view inst_byte
   }
 
   // Push implicit operands.
-  if (XED_IFORM_CALL_NEAR_RELBRd == iform || XED_IFORM_RET_NEAR == iform) {
-    // Push Write PC
-    Operand rip_op = {};
-    rip_op.type = Operand::kTypeRegister;
-    rip_op.action = Operand::kActionWrite;
-    rip_op.reg = RegOp(XED_REG_RIP);
-    rip_op.size = rip_op.reg.size;
-    inst.operands.push_back(rip_op);
+  auto push_operand = [&](Operand::Type type, Operand::Action action, xed_reg_enum_t reg) {
+    Operand op = {};
+    op.type = type;
+    op.action = action;
+    op.reg = RegOp(reg);
+    op.size = op.reg.size;
+    inst.operands.push_back(op);
+  };
 
-    // Push Read SP
-    Operand rsp_op = {};
-    rsp_op.type = Operand::kTypeRegister;
-    rsp_op.action = Operand::kActionRead;
-    rsp_op.reg = RegOp(XED_REG_RSP);
-    rsp_op.size = rsp_op.reg.size;
-    inst.operands.push_back(rsp_op);
-
-    // Push Write SP
-    Operand wsp_op = {};
-    wsp_op.type = Operand::kTypeRegister;
-    wsp_op.action = Operand::kActionWrite;
-    wsp_op.reg = RegOp(XED_REG_RSP);
-    wsp_op.size = wsp_op.reg.size;
-    inst.operands.push_back(wsp_op);
-  }
-
-  if (XED_IFORM_PUSH_GPRv_50 == iform || XED_IFORM_POP_GPRv_58== iform) {
-    // Push Read SP
-    Operand rsp_op = {};
-    rsp_op.type = Operand::kTypeRegister;
-    rsp_op.action = Operand::kActionRead;
-    rsp_op.reg = RegOp(XED_REG_RSP);
-    rsp_op.size = rsp_op.reg.size;
-    inst.operands.push_back(rsp_op);
-
-    // Push Write SP
-    Operand wsp_op = {};
-    wsp_op.type = Operand::kTypeRegister;
-    wsp_op.action = Operand::kActionWrite;
-    wsp_op.reg = RegOp(XED_REG_RSP);
-    wsp_op.size = wsp_op.reg.size;
-    inst.operands.push_back(wsp_op);
-  }
-  
-  if (XED_IFORM_CDQ == iform) {
-    // Push Read EAX
-    Operand eax_op = {};
-    eax_op.type = Operand::kTypeRegister;
-    eax_op.action = Operand::kActionRead;
-    eax_op.reg = RegOp(XED_REG_EAX);
-    eax_op.size = eax_op.reg.size;
-    inst.operands.push_back(eax_op);
-
-    // Push Write XDX (RDX/EDX)
-    Operand xdx_op = {};
-    xdx_op.type = Operand::kTypeRegister;
-    xdx_op.action = Operand::kActionWrite;
+  switch (iform) {
+    case XED_IFORM_CALL_NEAR_RELBRd:
+    case XED_IFORM_RET_NEAR:
+      push_operand(Operand::kTypeRegister, Operand::kActionWrite, XED_REG_RIP);
+      push_operand(Operand::kTypeRegister, Operand::kActionRead, XED_REG_RSP);
+      push_operand(Operand::kTypeRegister, Operand::kActionWrite, XED_REG_RSP);
+      break;
+    case XED_IFORM_PUSH_GPRv_50:
+    case XED_IFORM_POP_GPRv_58:
+      push_operand(Operand::kTypeRegister, Operand::kActionRead, XED_REG_RSP);
+      push_operand(Operand::kTypeRegister, Operand::kActionWrite, XED_REG_RSP);
+      break;
+    case XED_IFORM_CDQ:
+      push_operand(Operand::kTypeRegister, Operand::kActionRead, XED_REG_EAX);
     #if 64 == ADDRESS_SIZE_BITS
-    xdx_op.reg = RegOp(XED_REG_RDX);
+      push_operand(Operand::kTypeRegister, Operand::kActionWrite, XED_REG_RDX);
     #else
-    xdx_op.reg = RegOp(XED_REG_EDX);
+      push_operand(Operand::kTypeRegister, Operand::kActionWrite, XED_REG_EDX);
     #endif
-    xdx_op.size = xdx_op.reg.size;
-    inst.operands.push_back(xdx_op);
-  }
-
-  if (XED_IFORM_CDQE == iform) {
-    // Push Read EAX
-    Operand eax_op = {};
-    eax_op.type = Operand::kTypeRegister;
-    eax_op.action = Operand::kActionRead;
-    eax_op.reg = RegOp(XED_REG_EAX);
-    eax_op.size = eax_op.reg.size;
-    inst.operands.push_back(eax_op);
-
-    // Push Write RAX
-    Operand rax_op = {};
-    rax_op.type = Operand::kTypeRegister;
-    rax_op.action = Operand::kActionWrite;
-    rax_op.reg = RegOp(XED_REG_RAX);
-    rax_op.size = rax_op.reg.size;
-    inst.operands.push_back(rax_op);
-  }
-
-  if (XED_IFORM_IDIV_MEMv == iform || XED_IFORM_IDIV_GPRv == iform) {
-    // Push Read EAX
-    Operand eax_op = {};
-    eax_op.type = Operand::kTypeRegister;
-    eax_op.action = Operand::kActionRead;
-    eax_op.reg = RegOp(XED_REG_EAX);
-    eax_op.size = eax_op.reg.size;
-    inst.operands.push_back(eax_op);
-
-    // Push Read EDX
-    Operand edx_op = {};
-    edx_op.type = Operand::kTypeRegister;
-    edx_op.action = Operand::kActionRead;
-    edx_op.reg = RegOp(XED_REG_EDX);
-    edx_op.size = edx_op.reg.size;
-    inst.operands.push_back(edx_op);
-
-    // Push Write RAX
-    Operand wrax_op = {};
-    wrax_op.type = Operand::kTypeRegister;
-    wrax_op.action = Operand::kActionWrite;
-    wrax_op.reg = RegOp(XED_REG_RAX);
-    wrax_op.size = wrax_op.reg.size;
-    inst.operands.push_back(wrax_op);
-
-    // Push Write RDX
-    Operand wrdx_op = {};
-    wrdx_op.type = Operand::kTypeRegister;
-    wrdx_op.action = Operand::kActionWrite;
-    wrdx_op.reg = RegOp(XED_REG_RDX);
-    wrdx_op.size = wrdx_op.reg.size;
-    inst.operands.push_back(wrdx_op);
+      break;
+    case XED_IFORM_CDQE:
+      push_operand(Operand::kTypeRegister, Operand::kActionRead, XED_REG_EAX);
+      push_operand(Operand::kTypeRegister, Operand::kActionWrite, XED_REG_RAX);
+      break;
+    case XED_IFORM_IDIV_MEMv:
+    case XED_IFORM_IDIV_GPRv:
+      push_operand(Operand::kTypeRegister, Operand::kActionRead, XED_REG_EAX);
+      push_operand(Operand::kTypeRegister, Operand::kActionRead, XED_REG_EDX);
+      push_operand(Operand::kTypeRegister, Operand::kActionWrite, XED_REG_RAX);
+      push_operand(Operand::kTypeRegister, Operand::kActionWrite, XED_REG_RDX);
+      break;
+    default: break;
   }
 
   SetSemaFuncArgType(inst, iform);
