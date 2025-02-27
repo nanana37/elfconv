@@ -255,33 +255,43 @@ DEF_ISEL_Rn_In(CMP_GPRv_IMMb, CMP_RI_RI);
 // DEF_ISEL(CMP_AL_IMMb) = CMP<R8, I8>;
 // DEF_ISEL_Rn_In(CMP_OrAX_IMMz, CMP);
 
-// namespace {
+namespace {
 
-// template <typename T, typename U, typename V>
-// ALWAYS_INLINE static void WriteFlagsMul(State &state, T lhs, T rhs, U res, V res_trunc) {
-//   const auto new_of = Overflow<tag_mul>::Flag(lhs, rhs, res);
-//   FLAG_CF = new_of;
-//   FLAG_PF = BUndefined();  // Technically undefined.
-//   FLAG_AF = BUndefined();
-//   FLAG_ZF = BUndefined();
-//   FLAG_SF = BUndefined();
-//   FLAG_OF = new_of;
-// }
+template <typename T, typename U, typename V>
+ALWAYS_INLINE static void WriteFlagsMul(State &state, T lhs, T rhs, U res, V res_trunc) {
+  const auto new_of = Overflow<tag_mul>::Flag(lhs, rhs, res);
+  FLAG_CF = new_of;
+  FLAG_PF = BUndefined();  // Technically undefined.
+  FLAG_AF = BUndefined();
+  FLAG_ZF = BUndefined();
+  FLAG_SF = BUndefined();
+  FLAG_OF = new_of;
+}
 
-// // 2-operand and 3-operand multipliers truncate their results down to their
-// // base types.
-// template <typename D, typename S1, typename S2>
-// DEF_SEM(IMUL, D dst, S1 src1, S2 src2) {
-//   auto lhs = Signed(Read(src1));
-//   auto rhs = Signed(Read(src2));
-//   auto lhs_wide = SExt(lhs);
-//   auto rhs_wide = SExt(rhs);
-//   auto res = SMul(lhs_wide, rhs_wide);
-//   auto res_trunc = TruncTo<S2>(res);
-//   WriteZExt(dst, res_trunc);  // E.g. write to EAX can overwrite RAX.
-//   WriteFlagsMul(state, lhs, rhs, res, res_trunc);
-//   return memory;
-// }
+// 2-operand and 3-operand multipliers truncate their results down to their
+// base types.
+template <typename S1, typename S2>
+DEF_SEM_T_STATE_RUN(IMUL_R_M_RI, S1 src1, S2 src2) {
+  auto lhs = Signed(ReadMem(src1));
+  auto rhs = Signed(Read(src2));
+  auto lhs_wide = SExt(lhs);
+  auto rhs_wide = SExt(rhs);
+  auto res = SMul(lhs_wide, rhs_wide);
+  auto res_trunc = TruncTo<S2>(res);
+  WriteFlagsMul(state, lhs, rhs, res, res_trunc);
+  return res_trunc;  // E.g. write to EAX can overwrite RAX.
+}
+template <typename S1, typename S2>
+DEF_SEM_T_STATE(IMUL_R_R_RI, S1 src1, S2 src2) {
+  auto lhs = Signed(Read(src1));
+  auto rhs = Signed(Read(src2));
+  auto lhs_wide = SExt(lhs);
+  auto rhs_wide = SExt(rhs);
+  auto res = SMul(lhs_wide, rhs_wide);
+  auto res_trunc = TruncTo<S2>(res);
+  WriteFlagsMul(state, lhs, rhs, res, res_trunc);
+  return res_trunc;  // E.g. write to EAX can overwrite RAX.
+}
 
 // // Unsigned multiply without affecting flags.
 // template <typename D, typename S2>
@@ -378,7 +388,7 @@ DEF_ISEL_Rn_In(CMP_GPRv_IMMb, CMP_RI_RI);
 //   return memory;
 // }
 
-// }  // namespace
+}  // namespace
 
 // DEF_ISEL(IMUL_MEMb) = IMULal<M8>;
 // DEF_ISEL(IMUL_GPR8) = IMULal<R8>;
@@ -391,15 +401,15 @@ DEF_ISEL_Rn_In(CMP_GPRv_IMMb, CMP_RI_RI);
 // DEF_ISEL(IMUL_GPRv_32) = IMULeax<R32>;
 // IF_64BIT(DEF_ISEL(IMUL_GPRv_64) = IMULrax<R64>;)
 
-// // All dests are registers, albeit different ones from the sources.
+// All dests are registers, albeit different ones from the sources.
 // DEF_ISEL_RnW_Mn_In(IMUL_GPRv_MEMv_IMMz, IMUL);
 // DEF_ISEL_RnW_Rn_In(IMUL_GPRv_GPRv_IMMz, IMUL);
-// DEF_ISEL_RnW_Mn_In(IMUL_GPRv_MEMv_IMMb, IMUL);
+DEF_ISEL_RnW_Mn_In(IMUL_GPRv_MEMv_IMMb, IMUL_R_M_RI);
 // DEF_ISEL_RnW_Rn_In(IMUL_GPRv_GPRv_IMMb, IMUL);
 
-// // Two-operand, but dest is a register so turns into a three-operand.
+// Two-operand, but dest is a register so turns into a three-operand.
 // DEF_ISEL_RnW_Rn_Mn(IMUL_GPRv_MEMv, IMUL);
-// DEF_ISEL_RnW_Rn_Rn(IMUL_GPRv_GPRv, IMUL);
+DEF_ISEL_RnW_Rn_Rn(IMUL_GPRv_GPRv, IMUL_R_R_RI);
 
 // DEF_ISEL(MUL_GPR8) = MULal<R8>;
 // DEF_ISEL(MUL_MEMb) = MULal<M8>;

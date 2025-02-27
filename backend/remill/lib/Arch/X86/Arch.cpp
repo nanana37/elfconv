@@ -1006,6 +1006,7 @@ void SetSemaFuncArgType(Instruction &inst, xed_iform_enum_t iform) {
     case XED_IFORM_CMP_MEMv_IMMz:
     case XED_IFORM_CMP_MEMv_IMMb:
     case XED_IFORM_ADD_GPRv_MEMv:
+    case XED_IFORM_IMUL_GPRv_MEMv_IMMb:
     case XED_IFORM_IDIV_MEMv:
     case XED_IFORM_IDIV_GPRv:
     case XED_IFORM_SHL_GPRv_IMMb_C1r4:
@@ -1018,6 +1019,7 @@ void SetSemaFuncArgType(Instruction &inst, xed_iform_enum_t iform) {
     case XED_IFORM_JNZ_RELBRd:
     case XED_IFORM_JNL_RELBRd:
     case XED_IFORM_JLE_RELBRd:
+    case XED_IFORM_IMUL_GPRv_GPRv:
     case XED_IFORM_ADD_GPRv_IMMb:
     case XED_IFORM_ADD_GPRv_IMMz:
     case XED_IFORM_SUB_GPRv_IMMz:
