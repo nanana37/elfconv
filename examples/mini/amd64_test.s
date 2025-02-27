@@ -105,12 +105,72 @@ test_call_procedure:
     call func1
     cmp rax, 60
     jne fail_call_procedure
-    jmp success
+    jmp test_jnl_relbrd
 
 fail_call_procedure:
     mov rax, 1
     mov rdi, 1
     lea rsi, [rip + call_procedure_error_msg]
+    mov rdx, 25
+    syscall
+    jmp exit
+
+test_jnl_relbrd:
+    mov rax, 20
+    cmp rax, 20
+    jge test_cmp_memv_immz
+    jmp fail_jnl_relbrd
+
+.section .data
+jnl_relbrd_error_msg:
+    .string "[ERROR] JNL_RELBRd\n"
+.section .text
+
+fail_jnl_relbrd:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + jnl_relbrd_error_msg]
+    mov rdx, 25
+    syscall
+    jmp exit
+
+test_cmp_memv_immz:
+    mov rbp, rsp
+    sub rsp, 8
+    mov dword ptr [rbp - 4], 100
+    cmp dword ptr [rbp - 4], 100
+    jne fail_cmp_memv_immz
+    jmp test_sub_gprv_immz
+
+.section .data
+cmp_memv_immz_error_msg:
+    .string "[ERROR] CMP_MEMv_IMMz\n"
+.section .text
+
+fail_cmp_memv_immz:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + cmp_memv_immz_error_msg]
+    mov rdx, 25
+    syscall
+    jmp exit
+
+test_sub_gprv_immz:
+    mov rax, 20
+    sub rax, 10
+    cmp rax, 10
+    jne fail_sub_gprv_immz
+    jmp success
+
+.section .data
+sub_gprv_immz_error_msg:
+    .string "[ERROR] SUB_GPRv_IMMz\n"
+.section .text
+
+fail_sub_gprv_immz:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + sub_gprv_immz_error_msg]
     mov rdx, 25
     syscall
     jmp exit
