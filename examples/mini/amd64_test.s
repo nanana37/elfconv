@@ -61,11 +61,70 @@ idiv_memv_32_error_msg:
 idiv_gprv_32_error_msg:
     .string "[ERROR] IDIV_GPRv_32\n"
 
+mov_gpr8_gpr8_88_error_msg:
+    .string "[ERROR] MOV_GPR8_GPR8_88\n"
+
+imul_gprv_memv_imm8_error_msg:
+    .string "[ERROR] IMUL_GPRv_MEMv_IMM8\n"
+
+imul_gprv_gprv_error_msg:
+    .string "[ERROR] IMUL_GPRv_GPRv\n"
+    
 .section .text
 .global _start
 
 _start:
+    jmp test_imul_gprv_gprv
+
+test_imul_gprv_gprv:
+    mov eax, 3
+    mov ebx, -5
+    .byte 0x0F, 0xAF, 0xC3   # IMUL EAX, EBX
+    cmp eax, -15
+    jne fail_imul_gprv_gprv
+    jmp test_imul_gprv_memv_imm8
+
+fail_imul_gprv_gprv:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + imul_gprv_gprv_error_msg]
+    mov rdx, 27
+    syscall
+    jmp exit
+    
+test_imul_gprv_memv_imm8:
+    mov rbp, rsp
+    sub rsp, 8
+    mov dword ptr [rbp], -2   # Store -2 in memory
+    xor eax, eax
+    .byte 0x6B, 0x45, 0x00, 0xFB # IMUL EAX, DWORD PTR [rbp], -5
+    cmp eax, 10
+    jne fail_imul_gprv_memv_imm8
+    jmp test_mov_gpr8_gpr8_88
+
+fail_imul_gprv_memv_imm8:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + imul_gprv_memv_imm8_error_msg]
+    mov rdx, 29
+    syscall
+    jmp exit
+
+test_mov_gpr8_gpr8_88:
+    mov al, 0x5A              # Set AL
+    mov bl, 0x00              # Clear BL
+    .byte 0x88, 0xD8          # MOV BL, AL
+    cmp bl, 0x5A
+    jne fail_mov_gpr8_gpr8_88
     jmp test_idiv_gprv_32
+
+fail_mov_gpr8_gpr8_88:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + mov_gpr8_gpr8_88_error_msg]
+    mov rdx, 26
+    syscall
+    jmp exit
 
 test_idiv_gprv_32:
     mov ebx, -5               # Divisor

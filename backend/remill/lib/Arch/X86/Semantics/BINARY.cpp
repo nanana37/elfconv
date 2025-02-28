@@ -246,18 +246,18 @@ DEF_SEM_VOID_STATE_RUN(CMP_M_RI, S1 src1, S2 src2) {
 }  // namespace
 
 DEF_ISEL(CMP_MEMb_IMMb_80r7) = CMP_M_RI<M8, I8>;
-// DEF_ISEL(CMP_GPR8_IMMb_80r7) = CMP<R8, I8>;
+DEF_ISEL(CMP_GPR8_IMMb_80r7) = CMP_RI_RI<R8, I8>;
 DEF_ISEL_Mn_In(CMP_MEMv_IMMz, CMP_M_RI);
 // DEF_ISEL_Rn_In(CMP_GPRv_IMMz, CMP);
 // DEF_ISEL(CMP_MEMb_IMMb_82r7) = CMP<M8, I8>;
-// DEF_ISEL(CMP_GPR8_IMMb_82r7) = CMP<R8, I8>;
+DEF_ISEL(CMP_GPR8_IMMb_82r7) = CMP_RI_RI<R8, I8>;
 DEF_ISEL_Mn_In(CMP_MEMv_IMMb, CMP_M_RI);
 DEF_ISEL_Rn_In(CMP_GPRv_IMMb, CMP_RI_RI);
 // DEF_ISEL(CMP_MEMb_GPR8) = CMP<M8, I8>;
-// DEF_ISEL(CMP_GPR8_GPR8_38) = CMP<R8, R8>;
+DEF_ISEL(CMP_GPR8_GPR8_38) = CMP_RI_RI<R8, R8>;
 // DEF_ISEL_Mn_In(CMP_MEMv_GPRv, CMP);
 DEF_ISEL_Rn_Rn(CMP_GPRv_GPRv_39, CMP_RI_RI);
-// DEF_ISEL(CMP_GPR8_GPR8_3A) = CMP<R8, R8>;
+DEF_ISEL(CMP_GPR8_GPR8_3A) = CMP_RI_RI<R8, R8>;
 // DEF_ISEL(CMP_GPR8_MEMb) = CMP<R8, M8>;
 // DEF_ISEL_Rn_Rn(CMP_GPRv_GPRv_3B, CMP);
 // DEF_ISEL_Rn_Mn(CMP_GPRv_MEMv, CMP);
@@ -280,7 +280,7 @@ ALWAYS_INLINE static void WriteFlagsMul(State &state, T lhs, T rhs, U res, V res
 // 2-operand and 3-operand multipliers truncate their results down to their
 // base types.
 template <typename S1, typename S2>
-DEF_SEM_T_STATE_RUN(IMUL_R_M_RI, S1 src1, S2 src2) {
+DEF_SEM_T_STATE_RUN(IMUL_M_RI, S1 src1, S2 src2) {
   auto lhs = Signed(ReadMem(src1));
   auto rhs = Signed(Read(src2));
   auto lhs_wide = SExt(lhs);
@@ -291,7 +291,7 @@ DEF_SEM_T_STATE_RUN(IMUL_R_M_RI, S1 src1, S2 src2) {
   return res_trunc;  // E.g. write to EAX can overwrite RAX.
 }
 template <typename S1, typename S2>
-DEF_SEM_T_STATE(IMUL_R_R_RI, S1 src1, S2 src2) {
+DEF_SEM_T_STATE(IMU_RI_RI, S1 src1, S2 src2) {
   auto lhs = Signed(Read(src1));
   auto rhs = Signed(Read(src2));
   auto lhs_wide = SExt(lhs);
@@ -411,14 +411,14 @@ DEF_SEM_T_STATE(IMUL_R_R_RI, S1 src1, S2 src2) {
 // IF_64BIT(DEF_ISEL(IMUL_GPRv_64) = IMULrax<R64>;)
 
 // All dests are registers, albeit different ones from the sources.
-// DEF_ISEL_RnW_Mn_In(IMUL_GPRv_MEMv_IMMz, IMUL);
+DEF_ISEL_RnW_Mn_In(IMUL_GPRv_MEMv_IMMz, IMUL_M_RI);
 // DEF_ISEL_RnW_Rn_In(IMUL_GPRv_GPRv_IMMz, IMUL);
-DEF_ISEL_RnW_Mn_In(IMUL_GPRv_MEMv_IMMb, IMUL_R_M_RI);
+DEF_ISEL_RnW_Mn_In(IMUL_GPRv_MEMv_IMMb, IMUL_M_RI);
 // DEF_ISEL_RnW_Rn_In(IMUL_GPRv_GPRv_IMMb, IMUL);
 
 // Two-operand, but dest is a register so turns into a three-operand.
 // DEF_ISEL_RnW_Rn_Mn(IMUL_GPRv_MEMv, IMUL);
-DEF_ISEL_RnW_Rn_Rn(IMUL_GPRv_GPRv, IMUL_R_R_RI);
+DEF_ISEL_RnW_Rn_Rn(IMUL_GPRv_GPRv, IMU_RI_RI);
 
 // DEF_ISEL(MUL_GPR8) = MULal<R8>;
 // DEF_ISEL(MUL_MEMb) = MULal<M8>;

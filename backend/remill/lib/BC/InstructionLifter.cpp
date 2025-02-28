@@ -143,6 +143,8 @@ std::pair<EcvReg, ERC> EcvReg::GetRegInfo(const std::string &_reg_name) {
       return {EcvReg(RegKind::General, 3), ERC::RegX};
     } else if ("EBX" == _reg_name) {
       return {EcvReg(RegKind::General, 3), ERC::RegW};
+    } else if ("BL" == _reg_name) {
+      return {EcvReg(RegKind::General, 3), ERC::RegB};
     } else if ("RSP" == _reg_name) {
       return {EcvReg(RegKind::General, 4), ERC::RegX};
     } else if ("RBP" == _reg_name) {
@@ -353,6 +355,7 @@ std::string EcvReg::GetRegName(ERC ecv_reg_class) const {
       switch (ecv_reg_class) {
         case ERC::RegX: return "RBX"; break;
         case ERC::RegW: return "EBX"; break;
+        case ERC::RegB: return "BL"; break;
         default: LOG(FATAL) << "Unsupported x86-64 register. number: " << number;
       }
     } else if (4 == number) {
