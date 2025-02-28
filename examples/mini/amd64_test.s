@@ -19,6 +19,27 @@ call_procedure_error_msg:
 push_pop_error_msg:
     .string "[ERROR] PUSH_POP\n"
 
+jnl_relbrd_error_msg:
+    .string "[ERROR] JNL_RELBRd\n"
+
+cmp_memv_immz_error_msg:
+    .string "[ERROR] CMP_MEMv_IMMz\n"
+
+sub_gprv_immz_error_msg:
+    .string "[ERROR] SUB_GPRv_IMMz\n"
+
+cmp_memv_immb_error_msg:
+    .string "[ERROR] CMP_MEMv_IMMb\n"
+
+jnz_relbrd_error_msg:
+    .string "[ERROR] JNZ_RELBRd\n"
+
+movsxd_gprv_memz_error_msg:
+    .string "[ERROR] MOVSXD_GPRv_MEMz\n"
+
+shl_gprv_immb_c1r4_error_msg:
+    .string "[ERROR] SHL_GPRv_IMMb_C1r4\n"
+
 mov_gpr8_immb_b0_error_msg:
     .string "[ERROR] MOV_GPR8_IMMb_B0\n"
 
@@ -100,7 +121,7 @@ fail_cmp_gprv_gprv_39:
 test_sub_gprv_gprv_29:
     mov eax, 10
     mov ebx, 3
-    .byte 0x29, 0xD8         # SUB EAX, EBX
+    sub eax, ebx
     cmp eax, 7
     jne fail_sub_gprv_gprv_29
     jmp test_imul_gprv_gprv
@@ -116,7 +137,7 @@ fail_sub_gprv_gprv_29:
 test_imul_gprv_gprv:
     mov eax, 3
     mov ebx, -5
-    .byte 0x0F, 0xAF, 0xC3   # IMUL EAX, EBX
+    imul eax, ebx
     cmp eax, -15
     jne fail_imul_gprv_gprv
     jmp test_imul_gprv_memv_imm8
@@ -134,7 +155,7 @@ test_imul_gprv_memv_imm8:
     sub rsp, 8
     mov dword ptr [rbp], -2   # Store -2 in memory
     xor eax, eax
-    .byte 0x6B, 0x45, 0x00, 0xFB # IMUL EAX, DWORD PTR [rbp], -5
+    imul eax, dword ptr [rbp], -5
     cmp eax, 10
     jne fail_imul_gprv_memv_imm8
     jmp test_mov_gpr8_gpr8_88
@@ -150,7 +171,7 @@ fail_imul_gprv_memv_imm8:
 test_mov_gpr8_gpr8_88:
     mov al, 0x5A              # Set AL
     mov bl, 0x00              # Clear BL
-    .byte 0x88, 0xD8          # MOV BL, AL
+    mov bl, al
     cmp bl, 0x5A
     jne fail_mov_gpr8_gpr8_88
     jmp test_idiv_gprv_32
@@ -167,9 +188,7 @@ test_idiv_gprv_32:
     mov ebx, -5               # Divisor
     mov eax, -23              # Dividend
     cdq
-    
-    .byte 0xF7, 0xFB          # IDIV EBX
-
+    idiv ebx
     cmp eax, 4
     jne fail_idiv_gprv_32
     cmp edx, -3
@@ -190,9 +209,7 @@ test_idiv_memv_32:
     mov dword ptr [rbp], -5
     mov eax, -23
     cdq
-
-    .byte 0xF7, 0x7D, 0x00    # IDIV DWORD PTR [rbp]
-
+    idiv dword ptr [rbp]
     cmp eax, 4
     jne fail_idiv_memv_32
     cmp edx, -3
@@ -225,8 +242,7 @@ fail_add_gprv_immz:
 
 test_mov_gprv_immv:
     xor rax, rax
-    .byte 0xB8  # MOV RAX, IMM32
-    .long 0x12345678  # IMM32
+    mov rax, 0x12345678
     cmp rax, 0x12345678
     jne fail_mov_gprv_immv
     jmp test_jle_relbrd  # Jump to the next test
@@ -258,14 +274,14 @@ test_cdqe:
     sub rsp, 8
 
     # Test with a negative value
-    mov eax, -1  # EAX = 0xFFFFFFFF
-    .byte 0x48, 0x98  # CDQE
+    mov eax, -1
+    cdqe
     cmp rax, 0xFFFFFFFFFFFFFFFF
     jne fail_cdqe
 
     # Test with a positive value
-    mov eax, 1  # EAX = 0x00000001
-    .byte 0x48, 0x98  # CDQE
+    mov eax, 1
+    cdqe
     cmp rax, 0x0000000000000001
     jne fail_cdqe
     jmp test_cdq
@@ -284,13 +300,13 @@ test_cdq:
 
     # Test with a negative value
     mov eax, -1
-    .byte 0x99  # CDQ
+    cdq
     cmp edx, 0xFFFFFFFF
     jne fail_cdq
 
     # Test with a positive value
     mov eax, 1
-    .byte 0x99  # CDQ
+    cdq
     cmp edx, 0x00000000
     jne fail_cdq
     jmp test_mov_memb_immb
@@ -306,7 +322,7 @@ fail_cdq:
 test_mov_memb_immb:
     mov rbp, rsp
     sub rsp, 8
-    .byte 0xC6, 0x45, 0xFF, 0x40  # mov byte ptr [rbp - 1], 0x40
+    mov byte ptr [rbp - 1], 0x40
     cmp byte ptr [rbp - 1], 0x40
     jne fail_mov_memb_immb
     jmp test_test_al_immb
@@ -323,7 +339,7 @@ test_test_al_immb:
     mov rbp, rsp
     sub rsp, 8
     mov al, 0x41
-    .byte 0xA8, 0x41  # test al, 0x41
+    test al, 0x41
     cmp al, 0x41
     jne fail_test_al_immb
     # Check if ZF (Zero Flag) is set correctly
@@ -342,7 +358,7 @@ test_mov_gpr8_memb:
     mov rbp, rsp
     sub rsp, 8
     mov byte ptr [rbp - 1], 0x42
-    .byte 0x8A, 0x45, 0xFF  # mov al, byte ptr [rbp - 1]
+    mov al, byte ptr [rbp - 1]
     cmp al, 0x42
     jne fail_mov_gpr8_memb
     jmp test_setl_gpr8
@@ -360,7 +376,7 @@ test_setl_gpr8:
     sub rsp, 8
     mov al, -1
     sub al, 1
-    .byte 0x0F, 0x9C, 0xC0  # setl al
+    setl al
     cmp al, 1
     jne fail_setl_gpr8
     jmp test_mov_memb_gpr8
@@ -377,7 +393,7 @@ test_mov_memb_gpr8:
     mov rbp, rsp
     sub rsp, 8
     mov al, 0x40
-    .byte 0x88, 0x45, 0xFF # mov byte ptr [rbp - 1], al
+    mov byte ptr [rbp - 1], al
     cmp byte ptr [rbp - 1], 0x40
     jne fail_mov_memb_gpr8
     jmp test_cmp_al_immb
@@ -393,8 +409,8 @@ fail_mov_memb_gpr8:
 test_cmp_al_immb:
     mov rbp, rsp
     sub rsp, 8
-    .byte 0xB0, 0x41  # mov al, 0x41
-    .byte 0x3C, 0x41  # cmp al, 0x41
+    mov al, 0x41
+    cmp al, 0x41
     jne fail_cmp_al_immb
     jmp test_mov_gpr8_immb_b0
 
@@ -409,7 +425,7 @@ fail_cmp_al_immb:
 test_mov_gpr8_immb_b0:
     mov rbp, rsp
     sub rsp, 8
-    .byte 0xB0, 0x42 # mov al, 0x42
+    mov al, 0x42
     cmp al, 0x42
     jne fail_mov_gpr8_immb_b0
     jmp test_mov_gprv_immz
@@ -519,11 +535,6 @@ test_jnl_relbrd:
     jge test_cmp_memv_immz
     jmp fail_jnl_relbrd
 
-.section .data
-jnl_relbrd_error_msg:
-    .string "[ERROR] JNL_RELBRd\n"
-.section .text
-
 fail_jnl_relbrd:
     mov rax, 1
     mov rdi, 1
@@ -540,11 +551,6 @@ test_cmp_memv_immz:
     jne fail_cmp_memv_immz
     jmp test_sub_gprv_immz
 
-.section .data
-cmp_memv_immz_error_msg:
-    .string "[ERROR] CMP_MEMv_IMMz\n"
-.section .text
-
 fail_cmp_memv_immz:
     mov rax, 1
     mov rdi, 1
@@ -559,11 +565,6 @@ test_sub_gprv_immz:
     cmp rax, 10
     jne fail_sub_gprv_immz
     jmp test_cmp_memv_immb
-
-.section .data
-sub_gprv_immz_error_msg:
-    .string "[ERROR] SUB_GPRv_IMMz\n"
-.section .text
 
 fail_sub_gprv_immz:
     mov rax, 1
@@ -581,11 +582,6 @@ test_cmp_memv_immb:
     jne fail_cmp_memv_immb
     jmp test_jnz_relbrd
 
-.section .data
-cmp_memv_immb_error_msg:
-    .string "[ERROR] CMP_MEMv_IMMb\n"
-.section .text
-
 fail_cmp_memv_immb:
     mov rax, 1
     mov rdi, 1
@@ -600,11 +596,6 @@ test_jnz_relbrd:
     jne fail_jnz_relbrd
     jmp test_movsxd_gprv_memz
 
-.section .data
-jnz_relbrd_error_msg:
-    .string "[ERROR] JNZ_RELBRd\n"
-.section .text
-
 fail_jnz_relbrd:
     mov rax, 1
     mov rdi, 1
@@ -612,11 +603,6 @@ fail_jnz_relbrd:
     mov rdx, 25
     syscall
     jmp exit
-
-.section .data
-movsxd_gprv_memz_error_msg:
-    .string "[ERROR] MOVSXD_GPRv_MEMz\n"
-.section .text
 
 test_movsxd_gprv_memz:
     mov rbp, rsp
@@ -639,15 +625,10 @@ test_shl_gprv_immb_c1r4:
     mov rbp, rsp
     sub rsp, 8
     mov rax, 0x1
-    .byte 0x48, 0xC1, 0xE0, 0x02  # shl rax, 2 (C1 /4)
+    shl rax, 2
     cmp rax, 4
     jne fail_shl_gprv_immb_c1r4
     jmp success
-
-.section .data
-shl_gprv_immb_c1r4_error_msg:
-    .string "[ERROR] SHL_GPRv_IMMb_C1r4\n"
-.section .text
 
 fail_shl_gprv_immb_c1r4:
     mov rax, 1
