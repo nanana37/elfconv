@@ -51,6 +51,15 @@ DEF_SEM_T_STATE_RUN(ADD_RI_M, S1 src1, S2 src2) {
   return sum;
 }
 
+template <typename D, typename S1, typename S2>
+DEF_SEM_VOID_STATE_RUN(ADD_M_RI, D dst, S1 src1, S2 src2) {
+  auto lhs = ReadMem(src1);
+  auto rhs = Read(src2);
+  auto sum = UAdd(lhs, rhs);
+  WriteFlagsAddSub<tag_add>(state, lhs, rhs, sum);
+  MWriteZExt(dst, sum);
+} 
+
 // template <typename D, typename S1, typename S2>
 // DEF_SEM(ADDPS, D dst, S1 src1, S2 src2) {
 //   FWriteV32(dst, FAddV32(FReadV32(src1), FReadV32(src2)));
@@ -93,7 +102,7 @@ DEF_ISEL_RnW_Rn_In(ADD_GPRv_IMMz, ADD_RI_RI);
 // DEF_ISEL(ADD_GPR8_IMMb_82r0) = ADD<R8W, R8, I8>;
 // DEF_ISEL_MnW_Mn_In(ADD_MEMv_IMMb, ADD);
 DEF_ISEL_RnW_Rn_In(ADD_GPRv_IMMb, ADD_RI_RI);
-// DEF_ISEL(ADD_MEMb_GPR8) = ADD<M8W, M8, R8>;
+DEF_ISEL(ADD_MEMb_GPR8) = ADD_M_RI<M8W, M8, R8>;
 // DEF_ISEL(ADD_GPR8_GPR8_00) = ADD<R8W, R8, R8>;
 // DEF_ISEL_MnW_Mn_Rn(ADD_MEMv_GPRv, ADD);
 // DEF_ISEL_RnW_Rn_Rn(ADD_GPRv_GPRv_01, ADD);

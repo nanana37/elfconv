@@ -46,11 +46,28 @@ cdq_error_msg:
 cdqe_error_msg:
     .string "[ERROR] CDQE\n"
 
+jle_relbrd_error_msg:
+    .string "[ERROR] JLE_RELBRd\n"
+
 .section .text
 .global _start
 
 _start:
-    jmp test_cdqe
+    jmp test_jle_relbrd
+
+test_jle_relbrd:
+    mov eax, 0
+    sub eax, 1
+    jle force_jle_relbrd
+    jmp fail_jle_relbrd
+
+fail_jle_relbrd:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + jle_relbrd_error_msg]
+    mov rdx, 20
+    syscall
+    jmp exit
 
 test_cdqe:
     mov rbp, rsp
@@ -73,7 +90,7 @@ fail_cdqe:
     mov rax, 1
     mov rdi, 1
     lea rsi, [rip + cdqe_error_msg]
-    mov rdx, 18
+    mov rdx, 14
     syscall
     jmp exit
 
@@ -455,6 +472,9 @@ fail_shl_gprv_immb_c1r4:
     mov rdx, 26
     syscall
     jmp exit
+
+force_jle_relbrd:
+    jmp test_cdqe
 
 success:
     mov rax, 1
