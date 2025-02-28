@@ -19,11 +19,33 @@ call_procedure_error_msg:
 push_pop_error_msg:
     .string "[ERROR] PUSH_POP\n"
 
+mov_memb_gpr8_error_msg:
+    .string "[ERROR] MOV_MEMb_GPR8\n"
+
 .section .text
 .globl _start
 
 _start:                  
+    jmp test_mov_memb_gpr8
+
+test_mov_memb_gpr8:
+    mov rbp, rsp
+    sub rsp, 8
+
+    mov al, 0x42
+    .byte 0x88, 0x45, 0xFF # mov byte ptr [rbp - 1], al
+
+    cmp byte ptr [rbp - 1], 0x42
+    jne fail_mov_memb_gpr8
     jmp test_cmp_al_immb
+
+fail_mov_memb_gpr8:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + mov_memb_gpr8_error_msg]
+    mov rdx, 25
+    syscall
+    jmp exit
 
 test_cmp_al_immb:
     mov rbp, rsp
@@ -298,7 +320,7 @@ fail_shl_gprv_immb_c1r4:
     mov rax, 1
     mov rdi, 1
     lea rsi, [rip + shl_gprv_immb_c1r4_error_msg]
-    mov rdx, 25
+    mov rdx, 26
     syscall
     jmp exit
 
