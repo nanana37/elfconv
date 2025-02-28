@@ -19,6 +19,12 @@ call_procedure_error_msg:
 push_pop_error_msg:
     .string "[ERROR] PUSH_POP\n"
 
+mov_gpr8_immb_b0_error_msg:
+    .string "[ERROR] MOV_GPR8_IMMb_B0\n"
+
+cmp_al_immb_error_msg:
+    .string "[ERROR] CMP_AL_IMMb\n"
+
 mov_memb_gpr8_error_msg:
     .string "[ERROR] MOV_MEMb_GPR8\n"
 
@@ -31,18 +37,93 @@ mov_gpr8_memb_error_msg:
 test_al_immb_error_msg:
     .string "[ERROR] TEST_AL_IMMb\n"
 
+mov_memb_immb_error_msg:
+    .string "[ERROR] MOV_MEMb_IMMb\n"
+
+cdq_error_msg:
+    .string "[ERROR] CDQ\n"
+
+cdqe_error_msg:
+    .string "[ERROR] CDQE\n"
+
 .section .text
 .global _start
 
-_start:                  
+_start:
+    jmp test_cdqe
+
+test_cdqe:
+    mov rbp, rsp
+    sub rsp, 8
+
+    # Test with a negative value
+    mov eax, -1  # EAX = 0xFFFFFFFF
+    .byte 0x48, 0x98  # CDQE
+    cmp rax, 0xFFFFFFFFFFFFFFFF
+    jne fail_cdqe
+
+    # Test with a positive value
+    mov eax, 1  # EAX = 0x00000001
+    .byte 0x48, 0x98  # CDQE
+    cmp rax, 0x0000000000000001
+    jne fail_cdqe
+    jmp test_cdq
+
+fail_cdqe:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + cdqe_error_msg]
+    mov rdx, 18
+    syscall
+    jmp exit
+
+test_cdq:
+    mov rbp, rsp
+    sub rsp, 8
+
+    # Test with a negative value
+    mov eax, -1
+    .byte 0x99  # CDQ
+    cmp edx, 0xFFFFFFFF
+    jne fail_cdq
+
+    # Test with a positive value
+    mov eax, 1
+    .byte 0x99  # CDQ
+    cmp edx, 0x00000000
+    jne fail_cdq
+    jmp test_mov_memb_immb
+
+fail_cdq:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + cdq_error_msg]
+    mov rdx, 17
+    syscall
+    jmp exit
+
+test_mov_memb_immb:
+    mov rbp, rsp
+    sub rsp, 8
+    .byte 0xC6, 0x45, 0xFF, 0x40  # mov byte ptr [rbp - 1], 0x40
+    cmp byte ptr [rbp - 1], 0x40
+    jne fail_mov_memb_immb
     jmp test_test_al_immb
+
+fail_mov_memb_immb:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + mov_memb_immb_error_msg]
+    mov rdx, 22
+    syscall
+    jmp exit
 
 test_test_al_immb:
     mov rbp, rsp
     sub rsp, 8
-    mov al, 0x42
-    .byte 0xA8, 0x42  # test al, 0x42
-    cmp al, 0x42
+    mov al, 0x41
+    .byte 0xA8, 0x41  # test al, 0x41
+    cmp al, 0x41
     jne fail_test_al_immb
     # Check if ZF (Zero Flag) is set correctly
     jnz fail_test_al_immb
@@ -94,11 +175,9 @@ fail_setl_gpr8:
 test_mov_memb_gpr8:
     mov rbp, rsp
     sub rsp, 8
-
-    mov al, 0x42
+    mov al, 0x40
     .byte 0x88, 0x45, 0xFF # mov byte ptr [rbp - 1], al
-
-    cmp byte ptr [rbp - 1], 0x42
+    cmp byte ptr [rbp - 1], 0x40
     jne fail_mov_memb_gpr8
     jmp test_cmp_al_immb
 
@@ -113,15 +192,10 @@ fail_mov_memb_gpr8:
 test_cmp_al_immb:
     mov rbp, rsp
     sub rsp, 8
-    .byte 0xB0, 0x42  # mov al, 0x42
-    .byte 0x3C, 0x42  # cmp al, 0x42
+    .byte 0xB0, 0x41  # mov al, 0x41
+    .byte 0x3C, 0x41  # cmp al, 0x41
     jne fail_cmp_al_immb
     jmp test_mov_gpr8_immb_b0
-
-.section .data
-cmp_al_immb_error_msg:
-    .string "[ERROR] CMP_AL_IMMb\n"
-.section .text
 
 fail_cmp_al_immb:
     mov rax, 1
@@ -138,11 +212,6 @@ test_mov_gpr8_immb_b0:
     cmp al, 0x42
     jne fail_mov_gpr8_immb_b0
     jmp test_mov_gprv_immz
-
-.section .data
-mov_gpr8_immb_b0_error_msg:
-    .string "[ERROR] MOV_GPR8_IMMb_B0\n"
-.section .text
 
 fail_mov_gpr8_immb_b0:
     mov rax, 1
