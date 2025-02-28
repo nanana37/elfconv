@@ -70,11 +70,30 @@ imul_gprv_memv_imm8_error_msg:
 imul_gprv_gprv_error_msg:
     .string "[ERROR] IMUL_GPRv_GPRv\n"
     
+sub_gprv_gprv_29_error_msg:
+    .string "[ERROR] SUB_GPRv_GPRv_29\n"
+
 .section .text
 .global _start
 
 _start:
+    jmp test_sub_gprv_gprv_29
+
+test_sub_gprv_gprv_29:
+    mov eax, 10
+    mov ebx, 3
+    .byte 0x29, 0xD8         # SUB EAX, EBX
+    cmp eax, 7
+    jne fail_sub_gprv_gprv_29
     jmp test_imul_gprv_gprv
+
+fail_sub_gprv_gprv_29:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + sub_gprv_gprv_29_error_msg]
+    mov rdx, 27
+    syscall
+    jmp exit
 
 test_imul_gprv_gprv:
     mov eax, 3
