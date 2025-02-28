@@ -25,20 +25,60 @@ mov_memb_gpr8_error_msg:
 setl_gpr8_error_msg:
     .string "[ERROR] SETL_GPR8\n"
 
+mov_gpr8_memb_error_msg:
+    .string "[ERROR] MOV_GPR8_MEMb\n"
+
+test_al_immb_error_msg:
+    .string "[ERROR] TEST_AL_IMMb\n"
+
 .section .text
-.globl _start
+.global _start
 
 _start:                  
+    jmp test_test_al_immb
+
+test_test_al_immb:
+    mov rbp, rsp
+    sub rsp, 8
+    mov al, 0x42
+    .byte 0xA8, 0x42  # test al, 0x42
+    cmp al, 0x42
+    jne fail_test_al_immb
+    # Check if ZF (Zero Flag) is set correctly
+    jnz fail_test_al_immb
+    jmp test_mov_gpr8_memb
+
+fail_test_al_immb:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + test_al_immb_error_msg]
+    mov rdx, 21
+    syscall
+    jmp exit
+
+test_mov_gpr8_memb:
+    mov rbp, rsp
+    sub rsp, 8
+    mov byte ptr [rbp - 1], 0x42
+    .byte 0x8A, 0x45, 0xFF  # mov al, byte ptr [rbp - 1]
+    cmp al, 0x42
+    jne fail_mov_gpr8_memb
     jmp test_setl_gpr8
+
+fail_mov_gpr8_memb:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + mov_gpr8_memb_error_msg]
+    mov rdx, 23
+    syscall
+    jmp exit
 
 test_setl_gpr8:
     mov rbp, rsp
     sub rsp, 8
-
     mov al, -1
-    sub al, 1   # AL = -2, SF=1, OF=0
+    sub al, 1
     .byte 0x0F, 0x9C, 0xC0  # setl al
-
     cmp al, 1
     jne fail_setl_gpr8
     jmp test_mov_memb_gpr8
