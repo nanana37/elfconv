@@ -49,11 +49,49 @@ cdqe_error_msg:
 jle_relbrd_error_msg:
     .string "[ERROR] JLE_RELBRd\n"
 
+mov_gprv_immv_error_msg:
+    .string "[ERROR] MOV_GPRv_IMMv\n"
+
+add_gprv_immz_error_msg:
+    .string "[ERROR] ADD_GPRv_IMMz\n"
+
 .section .text
 .global _start
 
 _start:
-    jmp test_jle_relbrd
+    jmp test_add_gprv_immz
+
+test_add_gprv_immz:
+    xor eax, eax
+    .byte 0x81, 0xC0  # ADD EAX, IMM32
+    .long 0x12345678  # IMM32
+    cmp rax, 0x12345678
+    jne fail_add_gprv_immz
+    jmp test_mov_gprv_immv
+
+fail_add_gprv_immz:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + add_gprv_immz_error_msg]
+    mov rdx, 22
+    syscall
+    jmp exit
+
+test_mov_gprv_immv:
+    xor rax, rax
+    .byte 0xB8  # MOV RAX, IMM32
+    .long 0x12345678  # IMM32
+    cmp rax, 0x12345678
+    jne fail_mov_gprv_immv
+    jmp test_jle_relbrd  # Jump to the next test
+
+fail_mov_gprv_immv:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + mov_gprv_immv_error_msg]
+    mov rdx, 22
+    syscall
+    jmp exit
 
 test_jle_relbrd:
     mov eax, 0
