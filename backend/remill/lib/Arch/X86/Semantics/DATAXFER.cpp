@@ -204,7 +204,7 @@ DEF_ISEL_RnW_Mn(MOV_GPRv_MEMv, MOV_RI_M);
 // DEF_ISEL(MOV_MEMb_AL) = MOV<M8W, R8>;
 // DEF_ISEL_MnW_Rn(MOV_MEMv_OrAX, MOV);
 // DEF_ISEL(MOV_GPR8_IMMb_D0) = MOV<R8W, I8>;
-// DEF_ISEL(MOV_GPR8_IMMb_B0) = MOV<R8W, I8>;  // https://github.com/intelxed/xed/commit/906d25
+DEF_ISEL(MOV_GPR8_IMMb_B0) = MOV_R_RI<I8>;// https://github.com/intelxed/xed/commit/906d25
 DEF_ISEL_RnW_In(MOV_GPRv_IMMv, MOV_R_RI);
 
 // DEF_ISEL(MOVNTI_MEMd_GPR32) = MOV<M32W, R32>;

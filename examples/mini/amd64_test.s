@@ -21,11 +21,54 @@ push_pop_error_msg:
 
 .section .text
 .globl _start
-.globl func1
-.type  func1, @function
 
 _start:                  
+    jmp test_cmp_al_immb
+
+test_cmp_al_immb:
+    mov rbp, rsp
+    sub rsp, 8
+    .byte 0xB0, 0x42  # mov al, 0x42
+    .byte 0x3C, 0x42  # cmp al, 0x42
+    jne fail_cmp_al_immb
+    jmp test_mov_gpr8_immb_b0
+
+.section .data
+cmp_al_immb_error_msg:
+    .string "[ERROR] CMP_AL_IMMb\n"
+.section .text
+
+fail_cmp_al_immb:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + cmp_al_immb_error_msg]
+    mov rdx, 25
+    syscall
+    jmp exit
+
+test_mov_gpr8_immb_b0:
+    mov rbp, rsp
+    sub rsp, 8
+    .byte 0xB0, 0x42 # mov al, 0x42
+    cmp al, 0x42
+    jne fail_mov_gpr8_immb_b0
     jmp test_mov_gprv_immz
+
+.section .data
+mov_gpr8_immb_b0_error_msg:
+    .string "[ERROR] MOV_GPR8_IMMb_B0\n"
+.section .text
+
+fail_mov_gpr8_immb_b0:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + mov_gpr8_immb_b0_error_msg]
+    mov rdx, 25
+    syscall
+    jmp exit
+
+.globl func1
+.type  func1, @function
 
 func1:
     push rbp
