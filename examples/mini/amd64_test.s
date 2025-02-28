@@ -100,11 +100,28 @@ cmp_gprv_gprv_39_error_msg:
 add_orax_immz_error_msg:
     .string "[ERROR] ADD_OrAX_IMMz\n"
 
+jnl_relbrb_error_msg:
+    .string "[ERROR] JNL_RELBRb\n"
+
 .section .text
 .global _start
 
 _start:
-    jmp test_add_orax_immz
+    jmp test_jnl_relbrb
+
+test_jnl_relbrb:
+    mov eax, 10
+    sub eax, 5
+    jnl test_add_orax_immz
+    jmp fail_jnl_relbrb
+
+fail_jnl_relbrb:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + jnl_relbrb_error_msg]
+    mov rdx, 20
+    syscall
+    jmp exit
 
 test_add_orax_immz:
     mov eax, 0
