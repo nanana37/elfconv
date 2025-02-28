@@ -97,11 +97,29 @@ sub_gprv_gprv_29_error_msg:
 cmp_gprv_gprv_39_error_msg:
     .string "[ERROR] CMP_GPRv_GPRv_39\n"
 
+add_orax_immz_error_msg:
+    .string "[ERROR] ADD_OrAX_IMMz\n"
+
 .section .text
 .global _start
 
 _start:
+    jmp test_add_orax_immz
+
+test_add_orax_immz:
+    mov eax, 0
+    add eax, 0x12345678
+    cmp eax, 0x12345678
+    jne fail_add_orax_immz
     jmp test_cmp_gprv_gprv_39
+
+fail_add_orax_immz:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + add_orax_immz_error_msg]
+    mov rdx, 22
+    syscall
+    jmp exit
 
 test_cmp_gprv_gprv_39:
     mov eax, 10              # First operand
@@ -225,10 +243,10 @@ fail_idiv_memv_32:
     jmp exit
 
 test_add_gprv_immz:
-    xor eax, eax
+    mov eax, 0
     .byte 0x81, 0xC0  # ADD EAX, IMM32
     .long 0x12345678  # IMM32
-    cmp rax, 0x12345678
+    cmp eax, 0x12345678
     jne fail_add_gprv_immz
     jmp test_mov_gprv_immv
 
