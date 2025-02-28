@@ -55,11 +55,61 @@ mov_gprv_immv_error_msg:
 add_gprv_immz_error_msg:
     .string "[ERROR] ADD_GPRv_IMMz\n"
 
+idiv_memv_32_error_msg:
+    .string "[ERROR] IDIV_MEMv_32\n"
+
+idiv_gprv_32_error_msg:
+    .string "[ERROR] IDIV_GPRv_32\n"
+
 .section .text
 .global _start
 
 _start:
+    jmp test_idiv_gprv_32
+
+test_idiv_gprv_32:
+    mov ebx, -5               # Divisor
+    mov eax, -23              # Dividend
+    cdq
+    
+    .byte 0xF7, 0xFB          # IDIV EBX
+
+    cmp eax, 4
+    jne fail_idiv_gprv_32
+    cmp edx, -3
+    jne fail_idiv_gprv_32
+    jmp test_idiv_memv_32
+
+fail_idiv_gprv_32:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + idiv_gprv_32_error_msg]
+    mov rdx, 22
+    syscall
+    jmp exit
+
+test_idiv_memv_32:
+    mov rbp, rsp
+    sub rsp, 8
+    mov dword ptr [rbp], -5
+    mov eax, -23
+    cdq
+
+    .byte 0xF7, 0x7D, 0x00    # IDIV DWORD PTR [rbp]
+
+    cmp eax, 4
+    jne fail_idiv_memv_32
+    cmp edx, -3
+    jne fail_idiv_memv_32
     jmp test_add_gprv_immz
+
+fail_idiv_memv_32:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + idiv_memv_32_error_msg]
+    mov rdx, 22
+    syscall
+    jmp exit
 
 test_add_gprv_immz:
     xor eax, eax
