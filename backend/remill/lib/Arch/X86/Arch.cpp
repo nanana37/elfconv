@@ -1028,6 +1028,7 @@ void SetSemaFuncArgType(Instruction &inst, xed_iform_enum_t iform) {
     case XED_IFORM_ADD_GPRv_IMMb:
     case XED_IFORM_ADD_GPRv_IMMz:
     case XED_IFORM_SUB_GPRv_GPRv_29:
+    case XED_IFORM_SUB_AL_IMMb:
     case XED_IFORM_SUB_GPRv_IMMz:
     case XED_IFORM_SUB_GPRv_IMMb: inst.sema_func_arg_type = SemaFuncArgType::State; break;
     default:

@@ -22,11 +22,34 @@ push_pop_error_msg:
 mov_memb_gpr8_error_msg:
     .string "[ERROR] MOV_MEMb_GPR8\n"
 
+setl_gpr8_error_msg:
+    .string "[ERROR] SETL_GPR8\n"
+
 .section .text
 .globl _start
 
 _start:                  
+    jmp test_setl_gpr8
+
+test_setl_gpr8:
+    mov rbp, rsp
+    sub rsp, 8
+
+    mov al, -1
+    sub al, 1   # AL = -2, SF=1, OF=0
+    .byte 0x0F, 0x9C, 0xC0  # setl al
+
+    cmp al, 1
+    jne fail_setl_gpr8
     jmp test_mov_memb_gpr8
+
+fail_setl_gpr8:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + setl_gpr8_error_msg]
+    mov rdx, 22
+    syscall
+    jmp exit
 
 test_mov_memb_gpr8:
     mov rbp, rsp
