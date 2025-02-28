@@ -73,11 +73,29 @@ imul_gprv_gprv_error_msg:
 sub_gprv_gprv_29_error_msg:
     .string "[ERROR] SUB_GPRv_GPRv_29\n"
 
+cmp_gprv_gprv_39_error_msg:
+    .string "[ERROR] CMP_GPRv_GPRv_39\n"
+
 .section .text
 .global _start
 
 _start:
+    jmp test_cmp_gprv_gprv_39
+
+test_cmp_gprv_gprv_39:
+    mov eax, 10              # First operand
+    mov ebx, 10              # Second operand
+    cmp eax, ebx
+    jne fail_cmp_gprv_gprv_39
     jmp test_sub_gprv_gprv_29
+
+fail_cmp_gprv_gprv_39:
+    mov rax, 1               # syscall: write
+    mov rdi, 1               # stdout
+    lea rsi, [rip + cmp_gprv_gprv_39_error_msg] # Load error message
+    mov rdx, 27              # Message length
+    syscall
+    jmp exit
 
 test_sub_gprv_gprv_29:
     mov eax, 10
