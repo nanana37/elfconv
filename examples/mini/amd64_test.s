@@ -4,6 +4,9 @@
 success_msg: 
     .string "success.\n"
 
+error_msg:
+    .string "error.\n"
+
 mov_gprv_immz_error_msg:
     .string "[ERROR]: MOV_GPRv_IMMz\n"
 
@@ -100,61 +103,75 @@ sub_gprv_gprv_29_error_msg:
 cmp_gprv_gprv_39_error_msg:
     .string "[ERROR] CMP_GPRv_GPRv_39\n"
 
-add_orax_immz_error_msg:
-    .string "[ERROR] ADD_OrAX_IMMz\n"
-
-jnl_relbrb_error_msg:
-    .string "[ERROR] JNL_RELBRb\n"
-
 .section .text
 .global _start
 
 _start:
     jmp test_jnl_relbrb
 
-test_jnl_relbrb:
-    mov eax, 10
-    sub eax, 5
-    jnl test_add_orax_immz
-    jmp fail_jnl_relbrb
-
-fail_jnl_relbrb:
+fail:
     mov rax, 1
     mov rdi, 1
-    lea rsi, [rip + jnl_relbrb_error_msg]
-    mov rdx, 20
+    lea rsi, [rip + error_msg]
+    mov rdx, 7
     syscall
     jmp exit
 
+.section .data
+jnl_relbrb_msg:
+    .string "[test] JNL_RELBRb\n"
+.section .text
+
+test_jnl_relbrb:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + jnl_relbrb_msg]
+    mov rdx, 19
+    syscall
+
+    mov eax, 10
+    sub eax, 5
+    jnl success_jnl_relbrb
+    jmp fail
+
+success_jnl_relbrb:
+    jmp test_add_orax_immz
+
+.section .data
+add_orax_immz_msg:
+    .string "[test] ADD_OrAX_IMMz\n"
+.section .text
+
 test_add_orax_immz:
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + add_orax_immz_msg]
+    mov rdx, 21
+    syscall
+    
     xor rax, rax
     add rax, 0x12345678
     cmp rax, 0x12345678
-    jne fail_add_orax_immz
+    jne fail
     jmp test_cmp_gprv_gprv_39
 
-fail_add_orax_immz:
-    mov rax, 1
-    mov rdi, 1
-    lea rsi, [rip + add_orax_immz_error_msg]
-    mov rdx, 22
-    syscall
-    jmp exit
+.section .data
+cmp_gprv_gprv_39_msg:
+    .string "[test] CMP_GPRv_GPRv_39\n"
+.section .text
 
 test_cmp_gprv_gprv_39:
-    mov eax, 10              # First operand
-    mov ebx, 10              # Second operand
-    cmp eax, ebx
-    jne fail_cmp_gprv_gprv_39
-    jmp test_sub_gprv_gprv_29
-
-fail_cmp_gprv_gprv_39:
-    mov rax, 1               # syscall: write
-    mov rdi, 1               # stdout
-    lea rsi, [rip + cmp_gprv_gprv_39_error_msg] # Load error message
-    mov rdx, 27              # Message length
+    mov rax, 1
+    mov rdi, 1
+    lea rsi, [rip + cmp_gprv_gprv_39_msg]
+    mov rdx, 27
     syscall
-    jmp exit
+
+    mov eax, 10
+    mov ebx, 10
+    cmp eax, ebx
+    jne fail
+    jmp test_sub_gprv_gprv_29
 
 test_sub_gprv_gprv_29:
     mov eax, 10
