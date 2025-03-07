@@ -70,6 +70,10 @@ DEF_SEM_T_RUN(MOV_RI_M, const S src) {
 //   UWriteV64(dst, UExtractV64(UReadV64(src), 0));
 //   return memory;
 // }
+template <typename D, typename S>
+DEF_SEM_VOID_RUN(MOVQ_V_RI, D dst, S src) {
+  UWriteV64(dst, UExtractVI64(UReadV64(src), 0));
+}
 
 // template <typename D, typename S>
 // DEF_SEM(MOVD, D dst, S src) {
@@ -226,7 +230,7 @@ DEF_ISEL_RnW_In(MOV_GPRv_IMMv, MOV_RI_RI);
 // DEF_ISEL(MOVQ_MMXq_MMXq_0F7F) = MOVQ<V64W, V64>;
 
 // DEF_ISEL(MOVQ_XMMdq_MEMq_0F6E) = MOVQ<V128W, MV64>;
-// IF_64BIT(DEF_ISEL(MOVQ_XMMdq_GPR64) = MOVQ<V128W, V64>;)
+// IF_64BIT(DEF_ISEL(MOVQ_XMMdq_GPR64) = MOVQ_V_RI<V128W, V64>;)
 // DEF_ISEL(MOVQ_MEMq_XMMq_0F7E) = MOVQ<MV64W, V128>;
 // IF_64BIT(DEF_ISEL(MOVQ_GPR64_XMMq) = MOVQ<V64W, V128>;)
 // DEF_ISEL(MOVQ_MEMq_XMMq_0FD6) = MOVQ<MV64W, V128>;

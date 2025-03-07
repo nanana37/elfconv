@@ -161,6 +161,20 @@ std::pair<EcvReg, ERC> EcvReg::GetRegInfo(const std::string &_reg_name) {
       return {EcvReg(RegKind::General, 7), ERC::RegW};
     } else if ("R8" == _reg_name) {
       return {EcvReg(RegKind::General, 8), ERC::RegX};
+    } else if ("R9" == _reg_name) {
+      return {EcvReg(RegKind::General, 9), ERC::RegX};
+    } else if ("R10" == _reg_name) {
+      return {EcvReg(RegKind::General, 10), ERC::RegX};
+    } else if ("R11" == _reg_name) {
+      return {EcvReg(RegKind::General, 11), ERC::RegX};
+    } else if ("R12" == _reg_name) {
+      return {EcvReg(RegKind::General, 12), ERC::RegX};
+    } else if ("R13" == _reg_name) {
+      return {EcvReg(RegKind::General, 13), ERC::RegX};
+    } else if ("R14" == _reg_name) {
+      return {EcvReg(RegKind::General, 14), ERC::RegX};
+    } else if ("R15" == _reg_name) {
+      return {EcvReg(RegKind::General, 15), ERC::RegX};
     } else if ("RIP" == _reg_name) {
       return {EcvReg(RegKind::Special, RIP_ORDER), ERC::RegX};
     } else if ("BRANCH_TAKEN" == _reg_name) {
@@ -271,6 +285,20 @@ std::string EcvReg::GetWideRegName() const {
       return "RDI";
     } else if (8 == number) {
       return "R8";
+    } else if (9 == number) {
+      return "R9";
+    } else if (10 == number) {
+      return "R10";
+    } else if (11 == number) {
+      return "R11";
+    } else if (12 == number) {
+      return "R12";
+    } else if (13 == number) {
+      return "R13";
+    } else if (14 == number) {
+      return "R14";
+    } else if (15 == number) {
+      return "R15";
     } else if (SP_ORDER == number) {
       return "RSP";
     } else if (RIP_ORDER == number) {
@@ -376,6 +404,20 @@ std::string EcvReg::GetRegName(ERC ecv_reg_class) const {
       return "RDI";
     } else if (8 == number) {
       return "R8";
+    } else if (9 == number) {
+      return "R9";
+    } else if (10 == number) {
+      return "R10";
+    } else if (11 == number) {
+      return "R11";
+    } else if (12 == number) {
+      return "R12";
+    } else if (13 == number) {
+      return "R13";
+    } else if (14 == number) {
+      return "R14";
+    } else if (15 == number) {
+      return "R15";
     } else if (SP_ORDER == number) {
       return "RSP";
     } else if (RIP_ORDER == number) {
